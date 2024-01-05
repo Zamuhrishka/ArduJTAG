@@ -1,0 +1,117 @@
+# Checkout config tool: https://zed0.co.uk/clang-format-configurator/
+# Or http://cf.monofraps.net/
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+# https://github.com/01org/parameter-framework/blob/master/.clang-format
+
+#-----------------------------------------------------------------------------
+# Common Settings
+#-----------------------------------------------------------------------------
+TabWidth: 4
+IndentWidth: 2
+ContinuationIndentWidth: 2
+UseTab: Never
+ColumnLimit: 120
+Language: Cpp
+
+#-----------------------------------------------------------------------------
+# Align Settings
+#-----------------------------------------------------------------------------
+AlignAfterOpenBracket : Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveBitFields: true
+AlignConsecutiveDeclarations: false
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: DontAlign
+AlignOperands: AlignAfterOperator
+AlignTrailingComments: true
+
+#-----------------------------------------------------------------------------
+# Allow Settings
+#-----------------------------------------------------------------------------
+AllowAllArgumentsOnNextLine: false
+AllowAllConstructorInitializersOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: false
+CompactNamespaces: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+
+#-----------------------------------------------------------------------------
+# Break Settings
+#-----------------------------------------------------------------------------
+BreakBeforeBraces: Allman
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: false
+BinPackParameters: false
+# BreakBeforeBinaryOperator: All
+# BreakBeforeConceptDeclarations: true
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterColon
+BreakStringLiterals: true
+
+#-----------------------------------------------------------------------------
+# Indent Settings
+#-----------------------------------------------------------------------------
+IndentCaseBlocks: false
+IndentCaseLabels: true
+NamespaceIndentation: All
+IndentExternBlock: Indent
+IndentPPDirectives: BeforeHash
+# IndentRequires: false
+IndentWrappedFunctionNames: false
+
+#-----------------------------------------------------------------------------
+# Spacing Settings
+#-----------------------------------------------------------------------------
+BitFieldColonSpacing: After
+# EmptyLineBeforeAccessModifier: Always
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+# SpaceBeforeCaseColon: true
+SpaceBeforeCtorInitializerColon: false
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: false
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 2
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+#-----------------------------------------------------------------------------
+# Penalty Settings
+#-----------------------------------------------------------------------------
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyBreakTemplateDeclaration: 10
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 1000
+
+#-----------------------------------------------------------------------------
+# Other Settings
+#-----------------------------------------------------------------------------
+CommentPragmas: "^ IWYU pragma:"
+FixNamespaceComments: false
+IncludeBlocks: Preserve
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+PointerAlignment: Right
+SortIncludes: true

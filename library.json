@@ -1,0 +1,21 @@
+{
+    "name": "ArduJtag",
+    "version": "1.0.0",
+    "description": "This is a lightweight and easy-to-use library for interfacing with JTAG devices using Arduino boards.",
+    "keywords": "jtag, boundaryscan",
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/Zamuhrishka/ArduJTAG.git"
+    },
+    "authors":
+    [
+      {
+        "name": "Aliaksandr Kavalchuk",
+        "email": "aliaksander.kavalchuk@gmail.com"
+      }
+    ],
+    "license": "MIT",
+    "frameworks": "Arduino",
+    "platforms": ["atmelavr", "espressif8266"]
+  }

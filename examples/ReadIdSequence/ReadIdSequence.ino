@@ -32,7 +32,8 @@ void loop()
   // TMS: 01100 | 000000001 | 10 | 100 | 000000000000000000000000000000001 | 10
   // TDI: 00000 | 011111111 | 00 | 000 | 000000000000000000000000000000000 | 00
 
-  // For more information about format of this arrays please see the README file in repository
+  // For more information about format of this arrays please see the README file in
+  // https://github.com/Zamuhrishka/ArduJTAG.git
   uint8_t tms[] = {0x06, 0x60, 0x01, 0x00, 0x00, 0x00, 0x0C};
   uint8_t tdi[] = {0xC0, 0x3F, 0x00, 0x00, 0x00, 0x00, 0x00};
   size_t length = 54;  // Length of the sequence

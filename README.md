@@ -29,7 +29,7 @@ lib_deps =
     ArduJtag
 [env]
 lib_deps =
-    https://github.com/zamuhrishka/ArduJtag.git
+    https://github.com/Zamuhrishka/ArduJtag.git
 ```
 
 ## Usage

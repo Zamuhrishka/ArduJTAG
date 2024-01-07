@@ -2,7 +2,7 @@
 
 # ArduJtag: Simple Library for Working with JTAG
 
-ArduJtag is a lightweight and easy-to-use library for interfacing with JTAG devices using Arduino boards. This library provides a way to communicate with JTAG compatible devices. It is designed during work on [Diving into JTAG protocol](https://medium.com/@aliaksandr.kavalchuk/diving-into-jtag-protocol-part-1-overview-fbdc428d3a16) articles and was used to study this protocol.
+ArduJtag is a lightweight and easy-to-use library for interfacing with JTAG devices using Arduino boards. This library provides a way to communicate with JTAG compatible devices. It is based on the [JTAGduino](https://github.com/balau/JTAGduino) project and was developed during the work on the [Diving into JTAG protocol](https://medium.com/@aliaksandr.kavalchuk/diving-into-jtag-protocol-part-1-overview-fbdc428d3a16) article and used to study this protocol
 
 ## Features
 

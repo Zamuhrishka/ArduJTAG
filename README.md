@@ -117,7 +117,8 @@ To form an arbitrary JTAG packet, the following function is intended:
 
 ```c
 /**
-   * \brief Perform a sequence of JTAG operations (a series of bit manipulations on TMS and TDI, reading TDO)
+   * \brief Perform a sequence of JTAG operations (a series of bit manipulations on TMS and TDI
+   *        reading TDO)
    *
    * \param n Number of operations in the sequence
    * \param tms Array of TMS values for the sequence

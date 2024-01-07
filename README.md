@@ -36,63 +36,101 @@ lib_deps =
 
 ## Usage
 
-- Create object
+To demonstrate the use of this library, I will show how to interact with the STM32F407 microcontroller via the JTAG interface.
+This microcontroller contains 2 TAP modules connected in series: BoundaryScan and Debug:
+
+![STM32F407TAP](doc/img/STM32F407TAPs.png)
+
+The size of the IR register for the BoundaryScan TAP is 5 bits. For the Debug TAP, it is 4 bits.
+
+### Write into IR register
+
+For writing into the IR register, the following function is used:
 
 ```c
-Jtag jtag = Jtag(TMS, TDI, TDO, TCK, RST);
+  /**
+   * \brief Send an instruction through the JTAG IR (Instruction Register)
+   *
+   * \param instruction The instruction code to be sent
+   * \param length The length of the instruction in bits
+   */
+  void ir(uint16_t instruction, uint16_t length);
 ```
 
-- Call neccessory methods
+Let's look at what arguments need to be passed to this function to set the `BYPASS` instruction in the BoundaryScan TAP, and the `IDCODE` instruction in the Debug TAP.
+Considering the arrangement of the BoundaryScan TAP and Debug TAP in the scan chain: BoundaryScan TAP is first - Debug TAP is second, and the fact that in JTAG data is transmitted least significant bit first, it turns out that for our purpose we need to write in the IR BoundaryScan TAP the value `0x1F` (`0b11111`), and in the IR Debug TAP - `0x0E` (`0b1110`). As a result, the bit sequence that needs to be set on the TDI line looks like this (remembering that in JTAG data is transmitted least significant bit first):
 
 ```c
-jtag.reset();
+TDI: 011111111
 ```
-
-Also see [examples](./examples/).
-
-## Data Buffer Format
-
-The method `dr(uint8_t *data, uint32_t length, uint8_t *output)` accepts arrays of type `uint8_t` for input and output data. The data is organized in a specific way. For example, to write the following bit sequence to the DR register:
 
 ```c
-uint32_t A = 0x07F8F00F;
+  uint16_t instruction = 0;
+  uint16_t length = 0;
+  ir(instruction = 0x1FE, length = 9);
 ```
 
-|A[31]|A[30]|A[29]|A[28]|A[27]|A[26]|A[25]|A[24]|A[23]|A[22]|A[21]|A[20]|A[19]|A[18]|A[17]|A[16]|A[15]|A[14]|A[13]|A[12]|A[11]|A[10]|A[9]|A[8]|A[7]|A[6]|A[5]|A[4]|A[3]|A[2]|A[1]|A[0]|
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|0|0|0|0|0|1|1|1|1|1|1|1|1|0|0|0|1|1|1|1|0|0|0|0|0|0|0|0|1|1|1|1|
+### Write into DR register
 
-You would represent it in the data array as follows:
+For writing into DR register the next function used:
 
 ```c
-uint8_t data[] = {0x0F, 0xF0, 0xF8, 0x07};
+  /**
+   * \brief Send data through the JTAG DR (Data Register)
+   *
+   * \param data Pointer to the data array to be sent
+   * \param length The length of the data in bits
+   * \param output Pointer to the buffer where the response will be stored
+   */
+  void dr(uint8_t *input, uint32_t length, uint8_t *output);
 ```
 
-data[0]:
+The formation of the input buffer occurs as follows, suppose you need to send the following bit sequence:
 
-|A[7]|A[6]|A[5]|A[4]|A[3]|A[2]|A[1]|A[0]|
-|---|---|---|---|---|---|---|---|
-|1|1|1|1|0|0|0|0|
+![1](doc/img/1.png)
 
-data[1]:
+Then the `input` array should look like this:
 
-|A[15]|A[14]|A[13]|A[12]|A[11]|A[10]|A[9]|A[8]|
-|---|---|---|---|---|---|---|---|
-|0|0|0|0|1|1|1|1|
+![2](doc/img/2.png)
 
-data[2]:
+The same transformation applies to the `output` array.
 
-|A[23]|A[22]|A[21]|A[20]|A[19]|A[18]|A[17]|A[16]|
-|---|---|---|---|---|---|---|---|
-|0|0|0|1|1|1|1|1|
+Let's consider a more specific example. Suppose it is necessary to send the following bit sequence into the `DR` register:
 
-data[3]:
+![3](doc/img/3.png)
 
-|A[31]|A[30]|A[29]|A[28]|A[27]|A[26]|A[25]|A[24]|
-|---|---|---|---|---|---|---|---|
-|1|1|1|0|0|0|0|0|
+Then the `input` array should look like this:
 
-This representation is also true for the output array.
+![4](doc/img/4.png)
+
+```c
+  uint8_t input = {0x02, 0x00, 0x40, 0x01};
+  uint8_t length = 0;
+  uint8_t input = {0x00, 0x00, 0x00, 0x00};
+
+  void dr(input, length = 27, output);
+```
+
+### Forming Arbitrary Bit Sequences
+
+To form an arbitrary JTAG packet, the following function is intended:
+
+```c
+/**
+   * \brief Perform a sequence of JTAG operations (a series of bit manipulations on TMS and TDI, reading TDO)
+   *
+   * \param n Number of operations in the sequence
+   * \param tms Array of TMS values for the sequence
+   * \param tdi Array of TDI values for the sequence
+   * \param tdo Pointer to the array where TDO values will be stored
+   * \return JTAG::ERROR Status of the sequence operation
+   */
+  JTAG::ERROR sequence(size_t n, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo);
+```
+
+The principle of forming arrays `tms`, `tdi`, `tdo` is exactly the same as for the `input` and `output` arrays described in the previous section.
+
+More examples of using this library can be found in [examples](./examples/).
 
 ## Contributing
 

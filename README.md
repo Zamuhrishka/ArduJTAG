@@ -37,15 +37,15 @@ lib_deps =
 ## Usage
 
 To demonstrate the use of this library, I will show how to interact with the STM32F407 microcontroller via the JTAG interface.
-This microcontroller contains 2 TAP modules connected in series: BoundaryScan and Debug:
+This microcontroller contains 2 TAP modules connected in series: **BoundaryScan** and **Debug**:
 
 ![STM32F407TAP](doc/img/STM32F407TAPs.png)
 
-The size of the IR register for the BoundaryScan TAP is 5 bits. For the Debug TAP, it is 4 bits.
+The size of the `IR` register for the **BoundaryScan** TAP is `5` bits. For the **Debug** TAP, it is `4` bits.
 
 ### Write into IR register
 
-For writing into the IR register, the following function is used:
+For writing into the `IR` register, the following function is used:
 
 ```c
   /**
@@ -57,12 +57,14 @@ For writing into the IR register, the following function is used:
   void ir(uint16_t instruction, uint16_t length);
 ```
 
-Let's look at what arguments need to be passed to this function to set the `BYPASS` instruction in the BoundaryScan TAP, and the `IDCODE` instruction in the Debug TAP.
-Considering the arrangement of the BoundaryScan TAP and Debug TAP in the scan chain: BoundaryScan TAP is first - Debug TAP is second, and the fact that in JTAG data is transmitted least significant bit first, it turns out that for our purpose we need to write in the IR BoundaryScan TAP the value `0x1F` (`0b11111`), and in the IR Debug TAP - `0x0E` (`0b1110`). As a result, the bit sequence that needs to be set on the TDI line looks like this (remembering that in JTAG data is transmitted least significant bit first):
+Let's look at what arguments need to be passed to this function to set the `BYPASS` instruction in the **BoundaryScan** TAP, and the `IDCODE` instruction in the **Debug** TAP.
+Considering the arrangement of the **BoundaryScan** TAP and **Debug** TAP in the scan chain: **BoundaryScan** TAP is first - **Debug** TAP is second, and the fact that in JTAG data is transmitted least significant bit first, it turns out that for our purpose we need to write in the `IR` **BoundaryScan** TAP the value `0x1F` (`0b11111`), and in the `IR` **Debug** TAP - `0x0E` (`0b1110`). As a result, the bit sequence that needs to be set on the `TDI` line looks like this (remembering that in JTAG data is transmitted least significant bit first):
 
 ```c
 TDI: 011111111
 ```
+
+The values of the arguments:
 
 ```c
   uint16_t instruction = 0;
@@ -72,7 +74,7 @@ TDI: 011111111
 
 ### Write into DR register
 
-For writing into DR register the next function used:
+For writing into `DR` register the next function used:
 
 ```c
   /**

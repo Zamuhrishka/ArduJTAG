@@ -39,7 +39,7 @@ lib_deps =
 To demonstrate the use of this library, I will show how to interact with the STM32F407 microcontroller via the JTAG interface.
 This microcontroller contains 2 TAP modules connected in series: **BoundaryScan** and **Debug**:
 
-![STM32F407TAP](doc/img/STM32F407TAPs.png)
+![STM32F407TAP](https://raw.githubusercontent.com/Zamuhrishka/ArduJTAG/master/doc/img/STM32F407TAPs.png)
 
 The size of the `IR` register for the **BoundaryScan** TAP is `5` bits. For the **Debug** TAP, it is `4` bits.
 
@@ -89,21 +89,21 @@ For writing into `DR` register the next function used:
 
 The formation of the input buffer occurs as follows, suppose you need to send the following bit sequence:
 
-![1](doc/img/1.png)
+![1](https://raw.githubusercontent.com/Zamuhrishka/ArduJTAG/master/doc/img/1.png)
 
 Then the `input` array should look like this:
 
-![2](doc/img/2.png)
+![2](https://raw.githubusercontent.com/Zamuhrishka/ArduJTAG/master/doc/img/2.png)
 
 The same transformation applies to the `output` array.
 
 Let's consider a more specific example. Suppose it is necessary to send the following bit sequence into the `DR` register:
 
-![3](doc/img/3.png)
+![3](https://raw.githubusercontent.com/Zamuhrishka/ArduJTAG/master/doc/img/3.png)
 
 Then the `input` array should look like this:
 
-![4](doc/img/4.png)
+![4](https://raw.githubusercontent.com/Zamuhrishka/ArduJTAG/master/doc/img/4.png)
 
 ```c
   uint8_t input = {0x02, 0x00, 0x40, 0x01};

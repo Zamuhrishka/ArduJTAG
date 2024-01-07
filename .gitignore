@@ -37,3 +37,7 @@
 include/version.hpp
 
 .clang-format
+
+doc/BufferStructure.drawio
+doc/*.bkp
+doc/*.dtmp

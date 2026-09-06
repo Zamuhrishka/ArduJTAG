@@ -39,7 +39,7 @@ void loop()
   size_t length = 54;  // Length of the sequence
 
   jtag.reset();                             // Reset the JTAG state machine
-  jtag.sequence(length, tms, tdi, output);  // Perform the sequence of operations
+  jtag.clockCycles(length, tms, tdi, output);  // Perform the sequence of operations
 
   Serial.print("> ");
 

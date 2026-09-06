@@ -112,9 +112,9 @@ void Jtag::dr(const uint8_t *data, uint32_t length, uint8_t *output)
   }
 }
 
-JTAG::ERROR Jtag::sequence(size_t n, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo)
+JTAG::ERROR Jtag::clockCycles(size_t cycleCount, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo)
 {
-  return this->bus.sequence(n, tms, tdi, tdo);
+  return this->bus.clockCycles(cycleCount, tms, tdi, tdo);
 }
 
 void Jtag::reset()
@@ -123,7 +123,7 @@ void Jtag::reset()
   uint8_t tdi = 0x00;
   uint8_t tdo = 0x00;
 
-  this->bus.sequence(RESET_TMS_LEN, &tms, &tdi, &tdo);
+  this->bus.clockCycles(RESET_TMS_LEN, &tms, &tdi, &tdo);
 }
 
 JTAG::ERROR Jtag::setSpeed(uint32_t khz)

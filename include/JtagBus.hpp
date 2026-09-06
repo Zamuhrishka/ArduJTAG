@@ -54,15 +54,15 @@ public:
   uint8_t clock(uint8_t tms, uint8_t tdi);
 
   /**
-   * \brief Perform a sequence of operations on the JTAG bus, useful for complex communications.
+   * \brief Generate TCK cycles, driving TMS and TDI and sampling TDO.
    *
-   * \param n The number of bits in the sequence.
+   * \param cycleCount Number of TCK cycles to generate.
    * \param tms Array of TMS values for the sequence.
    * \param tdi Array of TDI values for the sequence.
    * \param tdo Pointer to the array where TDO values will be stored.
    * \return JTAG::ERROR Error status of the sequence operation.
    */
-  JTAG::ERROR sequence(size_t n, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo);
+  JTAG::ERROR clockCycles(size_t cycleCount, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo);
 
 private:
   uint32_t last_tck_micros = 0;  // Timestamp of the last clock pulse, used for timing calculations.

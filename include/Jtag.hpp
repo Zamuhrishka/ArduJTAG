@@ -76,15 +76,15 @@ public:
   }
 
   /**
-   * \brief Perform a sequence of JTAG operations (a series of bit manipulations on TMS and TDI, reading TDO)
+   * \brief Generate TCK cycles, driving TMS and TDI and sampling TDO.
    *
-   * \param n Number of operations in the sequence
+   * \param cycleCount Number of TCK cycles to generate
    * \param tms Array of TMS values for the sequence
    * \param tdi Array of TDI values for the sequence
    * \param tdo Pointer to the array where TDO values will be stored
    * \return JTAG::ERROR Status of the sequence operation
    */
-  JTAG::ERROR sequence(size_t n, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo);
+  JTAG::ERROR clockCycles(size_t cycleCount, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo);
 
   /**
    * \brief Resets the JTAG state machine, typically setting it to the Test-Logic-Reset state.

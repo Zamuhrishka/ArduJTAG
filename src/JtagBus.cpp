@@ -46,7 +46,7 @@ uint32_t JtagBus::getSpeed() const
   return this->min_tck_micros;
 }
 
-void JtagBus::reset()
+void JtagBus::pulseTrst()
 {
   this->_rst.setLow();
   delayMicroseconds(this->min_tck_micros);

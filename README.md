@@ -160,9 +160,21 @@ active length equals the input length. Bit packing is LSB-first, as in `dr()`.
 Empty inputs, unequal input lengths, or insufficient output capacity return
 `INVALID_BUFFER`. A cycle count above `JTAG::CONSTANTS::MAX_SEQUENCE_LEN`
 returns `INVALID_SEQUENCE_LEN`. Validation failures leave all buffers unchanged
-and generate no clocks. The pointer-based API remains available on `JtagBus`.
+and generate no clocks.
 
 More examples of using this library can be found in [examples](./examples/).
+
+## Internal implementation
+
+Applications use `Jtag` from `Jtag.hpp` and `BitBuffer` for packed bit sequences.
+`Jtag` owns a concrete `JtagBus`, declared in `include/JtagBus.hpp`, as an
+internal implementation detail. Its pointer-based operations are not part of
+the supported application API.
+
+`Jtag` handles TAP transitions and validates buffers. `JtagBus` handles GPIO,
+clock timing, and sampling TDO. `Jtag::reset()` generates five TCK cycles with
+TMS high; the internal `JtagBus::pulseTrst()` instead pulses the physical TRST
+pin low, then high, without generating clocks.
 
 ## Development setup
 

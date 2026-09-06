@@ -14,8 +14,12 @@
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S __________________________________________________________
 /**
- * \brief The JtagBus class is responsible for managing the JTAG bus,
- *        encompassing all the JTAG operations over the defined set of pins.
+ * \internal
+ * \brief GPIO and timing implementation used internally by Jtag.
+ *
+ * Generates clock edges, samples TDO, and controls physical TRST.
+ * TAP transitions and buffer validation belong to Jtag. Applications should
+ * include Jtag.hpp and use Jtag; this class is not a supported public API.
  */
 class JtagBus
 {
@@ -39,10 +43,13 @@ public:
   uint32_t getSpeed() const;
 
   /**
-   * \brief Reset the JTAG bus, typically setting all connected devices to a known state.
+   * \brief Pulse the active-low TRST pin to perform a hardware TAP reset.
    *
+   * Holds TRST low for the configured minimum half-period, then releases it
+   * high. Requires a connected TRST pin and generates no TCK cycles.
+   * \see Jtag::reset() for the reset performed with TMS and TCK.
    */
-  void reset();
+  void pulseTrst();
 
   /**
    * \brief Perform a single clock cycle on the JTAG bus, optionally modifying the TMS and TDI lines.

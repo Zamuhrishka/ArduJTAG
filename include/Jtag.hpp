@@ -138,8 +138,9 @@ public:
   }
 
   /**
-   * \brief Resets the JTAG state machine, typically setting it to the Test-Logic-Reset state.
+   * \brief Enter Test-Logic-Reset by generating five TCK cycles with TMS high.
    *
+   * This protocol reset does not pulse the physical TRST pin.
    */
   void reset();
 

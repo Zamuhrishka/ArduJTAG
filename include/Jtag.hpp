@@ -37,12 +37,36 @@ public:
   explicit Jtag(uint8_t tms, uint8_t tdi, uint8_t tdo, uint8_t tck, uint8_t trst);
 
   /**
-   * \brief Send an instruction through the JTAG IR (Instruction Register)
-   *
-   * \param instruction The instruction code to be sent
-   * \param length The length of the instruction in bits
+   * @brief Send the low bits of a numeric instruction through JTAG IR.
+   * @param instruction Instruction value, transmitted least significant bit first.
+   * @param length Number of bits to transmit, from 1 to 16. Higher bits are ignored.
+   * @retval JTAG::ERROR::NO The transfer completed.
+   * @retval JTAG::ERROR::INVALID_SEQUENCE_LEN The length is outside 1..16;
+   *         no JTAG clocks are generated.
+   * @note Delegates to the BitBuffer overload and finishes in Run-Test/Idle.
    */
-  void ir(uint16_t instruction, uint16_t length);
+  JTAG::ERROR ir(uint16_t instruction, uint16_t length);
+
+  /**
+   * @brief Send a packed instruction, including instructions longer than 16 bits.
+   * @tparam Capacity Maximum instruction buffer capacity in bits.
+   * @param[in] instruction Valid buffer in transmission order. Its active bit
+   *                        count determines the instruction length.
+   * @retval JTAG::ERROR::NO The transfer completed.
+   * @retval JTAG::ERROR::INVALID_BUFFER The buffer is empty; no clocks are generated.
+   * @note Bytes are sent in array order, least significant bit first. TMS is
+   *       asserted on the last data bit to leave Shift-IR; the transfer finishes
+   *       in Run-Test/Idle. The input buffer is unchanged and TDO is discarded.
+   */
+  template <size_t Capacity>
+  JTAG::ERROR ir(const BitBuffer<Capacity> &instruction)
+  {
+    if (!instruction.valid()) {
+      return JTAG::ERROR::INVALID_BUFFER;
+    }
+    shiftIr(instruction.data(), instruction.bitCount());
+    return JTAG::ERROR::NO;
+  }
 
   /**
    * \brief Send a bit buffer through the JTAG DR and capture the response.
@@ -128,6 +152,13 @@ public:
   JTAG::ERROR setSpeed(uint32_t khz);
 
 private:
+  /**
+   * @brief Shift validated packed instruction bits and return to Run-Test/Idle.
+   * @param instruction Readable packed bytes for all requested bits.
+   * @param length Nonzero bit count within the supported BitBuffer capacity.
+   */
+  void shiftIr(const uint8_t *instruction, size_t length);
+
   /**
    * \brief Send data through the JTAG DR (Data Register)
    *

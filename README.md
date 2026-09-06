@@ -54,7 +54,7 @@ For writing into the `IR` register, the following function is used:
    * \param instruction The instruction code to be sent
    * \param length The length of the instruction in bits
    */
-  void ir(uint16_t instruction, uint16_t length);
+  JTAG::ERROR ir(uint16_t instruction, uint16_t length);
 ```
 
 Let's look at what arguments need to be passed to this function to set the `BYPASS` instruction in the **BoundaryScan** TAP, and the `IDCODE` instruction in the **Debug** TAP.
@@ -71,6 +71,20 @@ The values of the arguments:
   uint16_t length = 0;
   ir(instruction = 0x1FE, length = 9);
 ```
+
+For longer instructions or multi-device IR chains, pass a `BitBuffer`:
+
+```cpp
+auto instruction = BitBuffer<24>::fromBytes({0xFE, 0x01, 0xA5});
+JTAG::ERROR status = jtag.ir(instruction);
+```
+
+The buffer length determines the number of instruction bits. Bytes are sent in
+array order, least significant bit first, and the operation finishes in
+Run-Test/Idle. An empty buffer returns `INVALID_BUFFER` without generating clocks.
+The numeric overload remains available: `jtag.ir(0x1FE, 9)`. It transmits the
+requested low bits and returns `INVALID_SEQUENCE_LEN` without clocks if the
+length is outside 1..16. Both overloads return `JTAG::ERROR::NO` on success.
 
 ### Write into DR register
 
@@ -262,6 +276,13 @@ Run the Unity tests on your computer:
 
 ```sh
 pio test -e native
+```
+
+The `test_buffers` and `test_ir` suites run as separate executables. To run only
+IR tests:
+
+```sh
+pio test -e native -f test_ir
 ```
 
 PlatformIO installs the Native platform and Unity on the first run. The suite

@@ -34,7 +34,22 @@ Jtag::Jtag(uint8_t tms, uint8_t tdi, uint8_t tdo, uint8_t tck, uint8_t rst):
 {
 }
 
-void Jtag::ir(uint16_t instruction, uint16_t length)
+JTAG::ERROR Jtag::ir(uint16_t instruction, uint16_t length)
+{
+  constexpr size_t InstructionBits = 16; // Width of the numeric instruction argument.
+  if (length == 0 || length > InstructionBits) {
+    return JTAG::ERROR::INVALID_SEQUENCE_LEN;
+  }
+
+  BitBuffer<InstructionBits> bits;
+  bits.resize(length);
+  for (size_t i = 0; i < length; ++i) {
+    bits.set(i, (instruction >> i) & 1U);
+  }
+  return ir(bits);
+}
+
+void Jtag::shiftIr(const uint8_t *instruction, size_t length)
 {
   assert(length != 0);
 
@@ -52,11 +67,11 @@ void Jtag::ir(uint16_t instruction, uint16_t length)
   /* Shifting bits into IR register except last bit */
   for (uint16_t i_seq = 0; i_seq < length - 1; i_seq++)
   {
-    this->bus.clock(0, JTAG::getBitArray(i_seq, (uint8_t *)&instruction));
+    this->bus.clock(0, JTAG::getBitArray(i_seq, instruction));
   }
 
   /* Shifting the last bit into IR register */
-  this->bus.clock(1, JTAG::getBitArray(length - 1, (uint8_t *)&instruction));
+  this->bus.clock(1, JTAG::getBitArray(length - 1, instruction));
 
   /* Goto `Run-Test/Idle` state */
   for (uint16_t i_seq = 0; i_seq < IR_TMS_POST_LEN; i_seq++)

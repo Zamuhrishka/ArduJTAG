@@ -112,11 +112,6 @@ void Jtag::dr(const uint8_t *data, uint32_t length, uint8_t *output)
   }
 }
 
-JTAG::ERROR Jtag::clockCycles(size_t cycleCount, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo)
-{
-  return this->bus.clockCycles(cycleCount, tms, tdi, tdo);
-}
-
 void Jtag::reset()
 {
   uint8_t tms = RESET_TMS;

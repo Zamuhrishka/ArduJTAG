@@ -130,22 +130,23 @@ Input and output use the same byte order and LSB-first bit packing as `BitBuffer
 
 ### Forming Arbitrary Bit Sequences
 
-To form an arbitrary JTAG packet, the following function is intended:
+Use `clockCycles()` with packed TMS and TDI buffers of equal active length:
 
-```c
-/**
-   * \brief Generate TCK cycles, driving TMS and TDI and sampling TDO.
-   *
-   * \param cycleCount Number of TCK cycles to generate
-   * \param tms Array of TMS values for the sequence
-   * \param tdi Array of TDI values for the sequence
-   * \param tdo Pointer to the array where TDO values will be stored
-   * \return JTAG::ERROR Status of the sequence operation
-   */
-  JTAG::ERROR clockCycles(size_t cycleCount, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo);
+```cpp
+auto tms = BitBuffer<54>::fromBytes({0x06, 0x60, 0x01, 0x00, 0x00, 0x00, 0x0C}, 54);
+auto tdi = BitBuffer<54>::fromBytes({0xC0, 0x3F, 0x00, 0x00, 0x00, 0x00, 0x00}, 54);
+BitBuffer<54> tdo;
+JTAG::ERROR status = jtag.clockCycles(tms, tdi, tdo);
 ```
 
-The principle of forming arrays `tms`, `tdi`, `tdo` is exactly the same as for the `input` and `output` arrays described in the previous section.
+The input bit count determines the number of TCK cycles. Buffers may have
+different capacities; `tdo` must have room for all input bits. On success its
+active length equals the input length. Bit packing is LSB-first, as in `dr()`.
+
+Empty inputs, unequal input lengths, or insufficient output capacity return
+`INVALID_BUFFER`. A cycle count above `JTAG::CONSTANTS::MAX_SEQUENCE_LEN`
+returns `INVALID_SEQUENCE_LEN`. Validation failures leave all buffers unchanged
+and generate no clocks. The pointer-based API remains available on `JtagBus`.
 
 More examples of using this library can be found in [examples](./examples/).
 

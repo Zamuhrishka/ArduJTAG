@@ -76,15 +76,42 @@ public:
   }
 
   /**
-   * \brief Generate TCK cycles, driving TMS and TDI and sampling TDO.
-   *
-   * \param cycleCount Number of TCK cycles to generate
-   * \param tms Array of TMS values for the sequence
-   * \param tdi Array of TDI values for the sequence
-   * \param tdo Pointer to the array where TDO values will be stored
-   * \return JTAG::ERROR Status of the sequence operation
+   * @brief Generate TCK cycles from packed TMS and TDI buffers and capture TDO.
+   * @tparam TmsCapacity Maximum TMS buffer capacity in bits.
+   * @tparam TdiCapacity Maximum TDI buffer capacity in bits.
+   * @tparam TdoCapacity Maximum TDO buffer capacity in bits.
+   * @param[in] tms Valid TMS buffer; its active length determines the cycle count.
+   * @param[in] tdi Valid TDI buffer with the same active length as tms.
+   * @param[out] tdo Response buffer with capacity for every cycle. Its active
+   *                 length is set to the input length after validation.
+   * @retval JTAG::ERROR::NO The transfer completed.
+   * @retval JTAG::ERROR::INVALID_BUFFER An input is empty, input lengths differ,
+   *         or the output capacity is insufficient.
+   * @retval JTAG::ERROR::INVALID_SEQUENCE_LEN The cycle count exceeds
+   *         JTAG::CONSTANTS::MAX_SEQUENCE_LEN.
+   * @note All validation precedes changes to tdo and generation of JTAG clocks.
+   *       On validation failure, buffers are unchanged. Bits follow array order,
+   *       least significant bit first in each byte, including a partial last byte.
    */
-  JTAG::ERROR clockCycles(size_t cycleCount, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo);
+  template <size_t TmsCapacity, size_t TdiCapacity, size_t TdoCapacity>
+  JTAG::ERROR clockCycles(const BitBuffer<TmsCapacity> &tms,
+                          const BitBuffer<TdiCapacity> &tdi,
+                          BitBuffer<TdoCapacity> &tdo)
+  {
+    const size_t cycleCount = tms.bitCount();
+
+    if (!tms.valid() || !tdi.valid() || cycleCount != tdi.bitCount() ||
+        cycleCount > tdo.capacity()) {
+      return JTAG::ERROR::INVALID_BUFFER;
+    }
+
+    if (cycleCount > static_cast<uint32_t>(JTAG::CONSTANTS::MAX_SEQUENCE_LEN)) {
+      return JTAG::ERROR::INVALID_SEQUENCE_LEN;
+    }
+
+    tdo.resize(cycleCount);
+    return bus.clockCycles(cycleCount, tms.data(), tdi.data(), tdo.data());
+  }
 
   /**
    * \brief Resets the JTAG state machine, typically setting it to the Test-Logic-Reset state.

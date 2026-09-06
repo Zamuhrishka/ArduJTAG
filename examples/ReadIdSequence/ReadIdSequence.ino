@@ -18,7 +18,7 @@
 Jtag jtag = Jtag(TMS, TDI, TDO, TCK, RST);
 
 // Create a buffer to store the output data
-byte output[500] = {};
+BitBuffer<54> output;
 
 void setup()
 {
@@ -34,18 +34,20 @@ void loop()
 
   // For more information about format of this arrays please see the README file in
   // https://github.com/Zamuhrishka/ArduJTAG.git
-  uint8_t tms[] = {0x06, 0x60, 0x01, 0x00, 0x00, 0x00, 0x0C};
-  uint8_t tdi[] = {0xC0, 0x3F, 0x00, 0x00, 0x00, 0x00, 0x00};
-  size_t length = 54;  // Length of the sequence
+  auto tms = BitBuffer<54>::fromBytes({0x06, 0x60, 0x01, 0x00, 0x00, 0x00, 0x0C}, 54);
+  auto tdi = BitBuffer<54>::fromBytes({0xC0, 0x3F, 0x00, 0x00, 0x00, 0x00, 0x00}, 54);
 
   jtag.reset();                             // Reset the JTAG state machine
-  jtag.clockCycles(length, tms, tdi, output);  // Perform the sequence of operations
+  if (jtag.clockCycles(tms, tdi, output) != JTAG::ERROR::NO) {
+    Serial.println("JTAG transfer failed");
+    return;
+  }
 
   Serial.print("> ");
 
-  for (size_t i = 0; i < length / 8; i++)
+  for (size_t i = 0; i < output.byteCount(); i++)
   {
-    Serial.print(output[i], HEX);
+    Serial.print(output.byte(i), HEX);
     Serial.print(" ");
   }
   Serial.println(" ");

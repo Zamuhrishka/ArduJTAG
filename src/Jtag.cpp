@@ -65,7 +65,7 @@ void Jtag::ir(uint16_t instruction, uint16_t length)
   }
 }
 
-void Jtag::dr(uint8_t *data, uint32_t length, uint8_t *output)
+void Jtag::dr(const uint8_t *data, uint32_t length, uint8_t *output)
 {
   assert(data != nullptr);
   assert(length != 0);
@@ -82,8 +82,6 @@ void Jtag::dr(uint8_t *data, uint32_t length, uint8_t *output)
   {
     this->bus.clock(JTAG::getBitArray(i_seq, &tms_pre[0]), JTAG::getBitArray(i_seq, &tdi_pre[0]));
   }
-
-  bit_offset++;
 
   /* Shifting bits into DR register except last bit */
   for (uint16_t i_seq = 0; i_seq < length - 1; i_seq++, bit_offset++)
@@ -103,7 +101,9 @@ void Jtag::dr(uint8_t *data, uint32_t length, uint8_t *output)
     JTAG::setBitArray(bit_offset, &output[0], tdo);
   }
 
-  bit_offset++;
+  // The unused high bits of a partial final byte are always zero.
+  if (output != nullptr && length % 8 != 0)
+    output[length / 8] &= uint8_t((1U << (length % 8)) - 1U);
 
   /* Goto `Run-Test/Idle` state */
   for (uint16_t i_seq = 0; i_seq < DR_TMS_POST_LEN; i_seq++)

@@ -8,6 +8,7 @@
 #pragma once
 
 //_____ I N C L U D E S _______________________________________________________
+#include <BitBuffer.hpp>
 #include <JtagBus.hpp>
 #include <JtagCommon.hpp>
 //_____ C O N F I G S  ________________________________________________________
@@ -50,7 +51,18 @@ public:
    * \param length The length of the data in bits
    * \param output Pointer to the buffer where the response will be stored
    */
-  void dr(uint8_t *data, uint32_t length, uint8_t *output);
+  void dr(const uint8_t *data, uint32_t length, uint8_t *output);
+
+  // Output length follows input. Validation happens before any JTAG clocks.
+  template <size_t InputCapacity, size_t OutputCapacity>
+  JTAG::ERROR dr(const BitBuffer<InputCapacity> &input, BitBuffer<OutputCapacity> &output)
+  {
+    if (!input.valid() || input.bitCount() > output.capacity())
+      return JTAG::ERROR::INVALID_BUFFER;
+    output.resize(input.bitCount());
+    dr(input.data(), input.bitCount(), output.data());
+    return JTAG::ERROR::NO;
+  }
 
   /**
    * \brief Perform a sequence of JTAG operations (a series of bit manipulations on TMS and TDI, reading TDO)

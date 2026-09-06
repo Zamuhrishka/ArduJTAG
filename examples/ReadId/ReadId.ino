@@ -26,13 +26,22 @@ void loop()
 {
   uint16_t instruction = 0x1FE;  // Instruction to send to the IR register
   uint16_t length = 9;           // Length of the instruction in bits
-  uint32_t zero = 0;             // Initialize variable to hold the data to be written to DR
-  uint32_t id = 0;               // Initialize variable to store the ID read from the DR
+  auto input = BitBuffer<32>::fromBytes({0x00, 0x00, 0x00, 0x00});
+  BitBuffer<32> output;
 
-  jtag.reset();                                         // Reset the JTAG state machine
-  jtag.ir(instruction = 0x1FE, length = 9);             // Send the instruction to the IR register
-  jtag.dr((byte *)&zero, length = 32, (uint8_t *)&id);  // Perform a data register (DR) scan
+  jtag.reset();
+  jtag.ir(instruction, length);
 
-  Serial.print("> ");
-  Serial.println(id, HEX);
+  JTAG::ERROR status = jtag.dr(input, output);
+  if (status != JTAG::ERROR::NO) {
+    Serial.println("Error occurred while reading JTAG data register.");
+  } else {
+    uint32_t id = 0;
+    for (size_t i = 0; i < output.byteCount(); ++i)
+      id |= uint32_t(output.byte(i)) << (8 * i);
+
+    Serial.print("> ");
+    Serial.println(id, HEX);
+  }
+
 }

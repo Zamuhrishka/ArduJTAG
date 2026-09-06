@@ -1,11 +1,22 @@
+Host tests use PlatformIO Test Runner with Unity. Install PlatformIO Core and a
+local C++ compiler (GCC or Clang), then run from the repository root:
 
-This directory is intended for PlatformIO Test Runner and project tests.
+    pio test -e native
 
-Unit Testing is a software testing method by which individual units of
-source code, sets of one or more MCU program modules together with associated
-control data, usage procedures, and operating procedures, are tested to
-determine whether they are fit for use. Unit testing finds problems early
-in the development cycle.
+PlatformIO installs the Native platform and Unity on the first run. No Arduino
+board is required. Each test is reported separately; setUp resets the simulated
+bus before each test. Firmware builds still default to nanoatmega328new, which
+excludes this host-only suite.
 
-More information about PlatformIO Unit Testing:
-- https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+For AddressSanitizer and UndefinedBehaviorSanitizer on a supported host compiler:
+
+    ASAN_OPTIONS=detect_leaks=0 pio test -e native_sanitized
+
+Leak detection is disabled for ptrace-based environments. Address and undefined
+behavior checks remain enabled.
+
+The tests compile the real Jtag.cpp and JtagCommon.cpp with simulated JtagBus and
+JtagPin implementations and a minimal Arduino.h. They verify buffer packing,
+validation, transmitted bits, received bits, partial-byte padding and raw output
+bounds. They do not verify GPIO timing, TAP state transitions or physical JTAG
+communication.

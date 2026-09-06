@@ -45,22 +45,33 @@ public:
   void ir(uint16_t instruction, uint16_t length);
 
   /**
-   * \brief Send data through the JTAG DR (Data Register)
+   * \brief Send a bit buffer through the JTAG DR and capture the response.
    *
-   * \param data Pointer to the data array to be sent
-   * \param length The length of the data in bits
-   * \param output Pointer to the buffer where the response will be stored
+   * \tparam InputCapacity Maximum input buffer capacity in bits.
+   * \tparam OutputCapacity Maximum output buffer capacity in bits.
+   * \param[in] input Valid buffer containing the bits to transmit on TDI.
+   * \param[out] output Buffer receiving the bits sampled from TDO. Its capacity
+   *                    must be at least input.bitCount(); its active length is
+   *                    set to input.bitCount() before the transfer.
+   * \retval JTAG::ERROR::NO The transfer completed.
+   * \retval JTAG::ERROR::INVALID_BUFFER The input is empty or the output
+   *         capacity is insufficient. No JTAG clocks are generated and output
+   *         is left unchanged.
+   *
+   * \note Bits are transferred in BitBuffer order: bytes in array order,
+   *       least significant bit first within each byte. Exactly input.bitCount()
+   *       data bits are shifted, including any partial final byte.
    */
-  void dr(const uint8_t *data, uint32_t length, uint8_t *output);
-
-  // Output length follows input. Validation happens before any JTAG clocks.
   template <size_t InputCapacity, size_t OutputCapacity>
   JTAG::ERROR dr(const BitBuffer<InputCapacity> &input, BitBuffer<OutputCapacity> &output)
   {
-    if (!input.valid() || input.bitCount() > output.capacity())
+    if (!input.valid() || input.bitCount() > output.capacity()) {
       return JTAG::ERROR::INVALID_BUFFER;
+    }
+
     output.resize(input.bitCount());
     dr(input.data(), input.bitCount(), output.data());
+
     return JTAG::ERROR::NO;
   }
 
@@ -90,5 +101,16 @@ public:
   JTAG::ERROR setSpeed(uint32_t khz);
 
 private:
+  /**
+   * \brief Send data through the JTAG DR (Data Register)
+   *
+   * \param data Pointer to the data array to be sent
+   * \param length The length of the data in bits
+   * \param output Pointer to the buffer where the response will be stored
+   */
+  void dr(const uint8_t *data, uint32_t length, uint8_t *output);
+
+
+
   JtagBus bus;
 };

@@ -58,6 +58,7 @@ namespace JTAG
     INVALID_SPEED = -2,
     INVALID_SEQUENCE_LEN = -3,
     INVALID_BUFFER = -4,
+    INVALID_DEVICE = -5,
   };
 
   /**

@@ -21,3 +21,6 @@ validation, transmitted bits, received bits, partial-byte padding and raw output
 bounds. Sequence tests record individual bus clocks; IR tests verify TAP
 transitions, and reset is checked for five clocks with TMS high. They do not
 verify GPIO timing or physical JTAG communication.
+
+Chain tests verify combined IR/DR ordering, BYPASS placement, response extraction,
+in-place transfers, repeated instruction selection and validation without clocks.

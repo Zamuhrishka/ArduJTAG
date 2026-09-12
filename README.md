@@ -157,6 +157,50 @@ and generate no clocks.
 
 More examples of using this library can be found in [examples](./examples/).
 
+## Working with a device chain
+
+Include `JtagChain.hpp` to address one device while putting the others in
+BYPASS. `JtagDevice` stores the IR length; `JtagChain<MaxDevices, Capacity>`
+copies descriptions in physical **TDI-to-TDO order**. Targets are zero-based
+indices in that order. There is no automatic discovery.
+
+```cpp
+Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, TRST
+JtagChain<2, 40> chain(jtag);
+if (!chain.add(JtagDevice(5)) || !chain.add(JtagDevice(4))) {
+  return; // Invalid description, too many devices, or combined IR too long.
+}
+jtag.reset();
+auto instruction = BitBuffer<4>::fromBits("0111"); // Debug TAP IDCODE, 0xE.
+auto request = BitBuffer<32>::fromBytes({0, 0, 0, 0});
+BitBuffer<32> response;
+JTAG::ERROR status = chain.transfer(1, instruction, request, response);
+```
+
+Each `transfer()` programs the target IR and all-ones BYPASS instructions for
+other devices, then exchanges DR. Non-target devices contribute one zero input
+bit each; only target response bits are returned. This assumes standard all-ones
+BYPASS with a one-bit data register, as described in the
+[XJTAG chain documentation](https://docs.xjtag.com/xjtag/current/userguide/jtagsetup/checkingchain.html).
+Instruction length must match the selected device's IR length exactly.
+
+`Capacity` limits both combined IR length and combined DR length (target data
+plus one bit per other device), independently. Defaults are eight devices and
+256 bits. Storage is fixed: device descriptions live in the chain and two
+`BitBuffer<Capacity>` scratch buffers are used on the stack during a transfer.
+The referenced `Jtag` must outlive the chain. Input and output may be the same
+buffer.
+
+Unknown targets return `INVALID_DEVICE`; invalid buffers or instruction lengths
+return `INVALID_BUFFER`; an oversized combined DR returns `INVALID_SEQUENCE_LEN`.
+Validation failures generate no clocks and leave output unchanged.
+Call `jtag.reset()` initially or when the TAP state is unknown. Transfers finish
+in Run-Test/Idle, do not reset between operations, and always reload IR.
+Device-specific commands, response pipelines and required idle clocks remain
+the caller's responsibility.
+
+See [ReadIdChain](examples/ReadIdChain/ReadIdChain.ino) for a complete sketch.
+
 ## Internal implementation
 
 Applications use `Jtag` from `Jtag.hpp` and `BitBuffer` for packed bit sequences.

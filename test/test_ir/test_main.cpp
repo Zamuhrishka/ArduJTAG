@@ -89,34 +89,11 @@ static void test_ir_long_instruction() { check_ir_buffer(33); }
  */
 static void test_ir_max_capacity() { check_ir_buffer(32767); }
 
-static void check_numeric_ir(size_t count)
-{
-  Jtag jtag(1, 2, 3, 4, 5);
-  auto expected = BitBuffer<32767>::fromBytes({0xFE, 0xA5}, count);
-  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::NO), int(jtag.ir(0xA5FE, count)));
-  check_ir_trace(expected);
-  uint8_t numericTms[3] = {};
-  uint8_t numericTdi[3] = {};
-  memcpy(numericTms, clockTms, sizeof(numericTms));
-  memcpy(numericTdi, clockTdi, sizeof(numericTdi));
-  clocks = 0;
-  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::NO), int(jtag.ir(expected)));
-  TEST_ASSERT_EQUAL_HEX8_ARRAY(numericTms, clockTms, sizeof(numericTms));
-  TEST_ASSERT_EQUAL_HEX8_ARRAY(numericTdi, clockTdi, sizeof(numericTdi));
-}
-
-static void test_ir_numeric_single_bit() { check_numeric_ir(1); }
-static void test_ir_numeric_partial_byte() { check_numeric_ir(9); }
-static void test_ir_numeric_full_width() { check_numeric_ir(16); }
-
 static void test_ir_invalid_inputs_without_clocks()
 {
   Jtag jtag(1, 2, 3, 4, 5);
   BitBuffer<> empty;
   TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_BUFFER), int(jtag.ir(empty)));
-  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_SEQUENCE_LEN), int(jtag.ir(0xFFFF, 0)));
-  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_SEQUENCE_LEN), int(jtag.ir(0xFFFF, 17)));
-  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_SEQUENCE_LEN), int(jtag.ir(0xFFFF, UINT16_MAX)));
   TEST_ASSERT_EQUAL_UINT32(0, clocks);
   TEST_ASSERT_FALSE(empty.valid());
 }
@@ -129,9 +106,6 @@ int main()
   RUN_TEST(test_ir_partial_byte);
   RUN_TEST(test_ir_long_instruction);
   RUN_TEST(test_ir_max_capacity);
-  RUN_TEST(test_ir_numeric_single_bit);
-  RUN_TEST(test_ir_numeric_partial_byte);
-  RUN_TEST(test_ir_numeric_full_width);
   RUN_TEST(test_ir_invalid_inputs_without_clocks);
   return UNITY_END();
 }

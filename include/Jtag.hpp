@@ -11,6 +11,7 @@
 #include <BitBuffer.hpp>
 #include <JtagBus.hpp>
 #include <JtagCommon.hpp>
+#include <Arduino.h>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S __________________________________________________________
@@ -34,18 +35,10 @@ public:
    * \param tck Pin number for Test Clock
    * \param trst Pin number for Test Reset (optional, depending on JTAG hardware)
    */
-  explicit Jtag(uint8_t tms, uint8_t tdi, uint8_t tdo, uint8_t tck, uint8_t trst);
-
-  /**
-   * @brief Send the low bits of a numeric instruction through JTAG IR.
-   * @param instruction Instruction value, transmitted least significant bit first.
-   * @param length Number of bits to transmit, from 1 to 16. Higher bits are ignored.
-   * @retval JTAG::ERROR::NO The transfer completed.
-   * @retval JTAG::ERROR::INVALID_SEQUENCE_LEN The length is outside 1..16;
-   *         no JTAG clocks are generated.
-   * @note Delegates to the BitBuffer overload and finishes in Run-Test/Idle.
-   */
-  JTAG::ERROR ir(uint16_t instruction, uint16_t length);
+  explicit Jtag(uint8_t tms, uint8_t tdi, uint8_t tdo, uint8_t tck, uint8_t trst):
+      bus(JtagPin(tms, OUTPUT), JtagPin(tdi, OUTPUT), JtagPin(tdo, INPUT), JtagPin(tck, OUTPUT), JtagPin(trst, OUTPUT))
+  {
+  }
 
   /**
    * @brief Send a packed instruction, including instructions longer than 16 bits.
@@ -61,10 +54,38 @@ public:
   template <size_t Capacity>
   JTAG::ERROR ir(const BitBuffer<Capacity> &instruction)
   {
+    uint8_t tms_pre[1] = {IR_TMS_PRE};
+    uint8_t tms_post[1] = {IR_TMS_POST};
+    uint8_t tdi_pre[1] = {0x00};
+    uint8_t tdi_post[1] = {0x00};
+
     if (!instruction.valid()) {
       return JTAG::ERROR::INVALID_BUFFER;
     }
-    shiftIr(instruction.data(), instruction.bitCount());
+
+    /* Goto `Shift-IR` state */
+    for (uint16_t i_seq = 0; i_seq < IR_TMS_PRE_LEN; i_seq++)
+    {
+      bus.clock(JTAG::getBitArray(i_seq, &tms_pre[0]), JTAG::getBitArray(i_seq, &tdi_pre[0]));
+    }
+
+    uint16_t length = instruction.bitCount();
+
+    /* Shifting bits into IR register except last bit */
+    for (uint16_t i_seq = 0; i_seq < length - 1; i_seq++)
+    {
+      bus.clock(0, instruction.getBit(i_seq));
+    }
+
+    /* Shifting the last bit into IR register */
+    bus.clock(1, instruction.getBit(length - 1));
+
+    /* Goto `Run-Test/Idle` state */
+    for (uint16_t i_seq = 0; i_seq < IR_TMS_POST_LEN; i_seq++)
+    {
+      bus.clock(JTAG::getBitArray(i_seq, &tms_post[0]), JTAG::getBitArray(i_seq, &tdi_post[0]));
+    }
+
     return JTAG::ERROR::NO;
   }
 
@@ -93,8 +114,23 @@ public:
       return JTAG::ERROR::INVALID_BUFFER;
     }
 
-    output.resize(input.bitCount());
-    dr(input.data(), input.bitCount(), output.data());
+    const size_t length = input.bitCount();
+    output.resize(length);
+
+    // Enter Shift-DR.
+    for (size_t i = 0; i < DR_TMS_PRE_LEN; ++i) {
+      bus.clock((DR_TMS_PRE >> i) & 1U, 0);
+    }
+
+    // Assert TMS on the final data bit to leave Shift-DR.
+    for (size_t i = 0; i < length; ++i) {
+      output.set(i, bus.clock(i == length - 1, input.getBit(i)));
+    }
+
+    // Return to Run-Test/Idle.
+    for (size_t i = 0; i < DR_TMS_POST_LEN; ++i) {
+      bus.clock((DR_TMS_POST >> i) & 1U, 0);
+    }
 
     return JTAG::ERROR::NO;
   }
@@ -145,7 +181,12 @@ public:
    *
    * This protocol reset does not pulse the physical TRST pin.
    */
-  void reset();
+  void reset()
+  {
+    for (size_t i = 0; i < RESET_TMS_LEN; ++i) {
+      bus.clock(1, 0);
+    }
+  }
 
   /**
    * \brief Set the Speed of the JTAG communication in kilohertz
@@ -153,26 +194,23 @@ public:
    * \param khz Desired speed in kHz
    * \return JTAG::ERROR Status of the speed setting operation
    */
-  JTAG::ERROR setSpeed(uint32_t khz);
+  JTAG::ERROR setSpeed(uint32_t khz)
+  {
+    return bus.setSpeed(khz);
+  }
 
 private:
-  /**
-   * @brief Shift validated packed instruction bits and return to Run-Test/Idle.
-   * @param instruction Readable packed bytes for all requested bits.
-   * @param length Nonzero bit count within the supported BitBuffer capacity.
-   */
-  void shiftIr(const uint8_t *instruction, size_t length);
+  static constexpr uint8_t RESET_TMS_LEN = 5;
 
-  /**
-   * \brief Send data through the JTAG DR (Data Register)
-   *
-   * \param data Pointer to the data array to be sent
-   * \param length The length of the data in bits
-   * \param output Pointer to the buffer where the response will be stored
-   */
-  void dr(const uint8_t *data, uint32_t length, uint8_t *output);
+  static constexpr uint8_t IR_TMS_PRE = 6;
+  static constexpr uint8_t IR_TMS_POST = 1;
+  static constexpr uint8_t IR_TMS_PRE_LEN = 5;
+  static constexpr uint8_t IR_TMS_POST_LEN = 2;
 
-
+  static constexpr uint8_t DR_TMS_PRE = 1;
+  static constexpr uint8_t DR_TMS_POST = 1;
+  static constexpr uint8_t DR_TMS_PRE_LEN = 3;
+  static constexpr uint8_t DR_TMS_POST_LEN = 2;
 
   JtagBus bus;
 };

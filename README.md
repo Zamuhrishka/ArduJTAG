@@ -47,14 +47,9 @@ The size of the `IR` register for the **BoundaryScan** TAP is `5` bits. For the 
 
 For writing into the `IR` register, the following function is used:
 
-```c
-  /**
-   * \brief Send an instruction through the JTAG IR (Instruction Register)
-   *
-   * \param instruction The instruction code to be sent
-   * \param length The length of the instruction in bits
-   */
-  JTAG::ERROR ir(uint16_t instruction, uint16_t length);
+```cpp
+  template <size_t Capacity>
+  JTAG::ERROR ir(const BitBuffer<Capacity> &instruction);
 ```
 
 Let's look at what arguments need to be passed to this function to set the `BYPASS` instruction in the **BoundaryScan** TAP, and the `IDCODE` instruction in the **Debug** TAP.
@@ -67,9 +62,8 @@ TDI: 011111111
 The values of the arguments:
 
 ```c
-  uint16_t instruction = 0;
-  uint16_t length = 0;
-  ir(instruction = 0x1FE, length = 9);
+  auto instruction = BitBuffer<9>::fromBits("011111111");
+  jtag.ir(instruction);
 ```
 
 For longer instructions or multi-device IR chains, pass a `BitBuffer`:
@@ -82,9 +76,7 @@ JTAG::ERROR status = jtag.ir(instruction);
 The buffer length determines the number of instruction bits. Bytes are sent in
 array order, least significant bit first, and the operation finishes in
 Run-Test/Idle. An empty buffer returns `INVALID_BUFFER` without generating clocks.
-The numeric overload remains available: `jtag.ir(0x1FE, 9)`. It transmits the
-requested low bits and returns `INVALID_SEQUENCE_LEN` without clocks if the
-length is outside 1..16. Both overloads return `JTAG::ERROR::NO` on success.
+The operation returns `JTAG::ERROR::NO` on success.
 
 ### Write into DR register
 
@@ -101,7 +93,8 @@ auto bytes = BitBuffer<>::fromBytes({0x55, 0x60});
 
 BitBuffer<> output;
 jtag.reset();
-jtag.ir(0x1FE, 9); // Example instruction for the STM32F407 chain described above.
+auto instruction = BitBuffer<9>::fromBits("011111111");
+jtag.ir(instruction); // Example instruction for the STM32F407 chain described above.
 JTAG::ERROR status = jtag.dr(input, output);
 if (status == JTAG::ERROR::NO)
 {
@@ -167,6 +160,8 @@ More examples of using this library can be found in [examples](./examples/).
 ## Internal implementation
 
 Applications use `Jtag` from `Jtag.hpp` and `BitBuffer` for packed bit sequences.
+`Jtag` is implemented entirely in its header; `JtagBus` and `JtagPin` retain
+separate implementation files.
 `Jtag` owns a concrete `JtagBus`, declared in `include/JtagBus.hpp`, as an
 internal implementation detail, outside the supported application API.
 

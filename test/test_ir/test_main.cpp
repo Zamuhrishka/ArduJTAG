@@ -69,10 +69,29 @@ static void check_ir_buffer(size_t count)
   TEST_ASSERT_EQUAL_HEX8_ARRAY(before.data(), input.data(), input.byteCount());
 }
 
+/**
+ * Tests IR functionality for a single bit.
+ */
 static void test_ir_single_bit() { check_ir_buffer(1); }
+
+/**
+ * Tests IR functionality for a full byte.
+ */
 static void test_ir_full_byte() { check_ir_buffer(8); }
+
+/**
+ * Tests IR functionality for a partial byte.
+ */
 static void test_ir_partial_byte() { check_ir_buffer(9); }
+
+/**
+ * Tests IR functionality for a long instruction.
+ */
 static void test_ir_long_instruction() { check_ir_buffer(33); }
+
+/**
+ * Tests IR functionality at maximum capacity.
+ */
 static void test_ir_max_capacity() { check_ir_buffer(32767); }
 
 static void check_numeric_ir(size_t count)

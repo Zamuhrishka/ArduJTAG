@@ -9,7 +9,7 @@
 
 //_____ I N C L U D E S _______________________________________________________
 #include <BitBuffer.hpp>
-#include <JtagBus.hpp>
+#include <JtagGpio.hpp>
 #include <JtagCommon.hpp>
 #include <Arduino.h>
 //_____ C O N F I G S  ________________________________________________________
@@ -36,7 +36,7 @@ public:
    * \param trst Pin number for Test Reset (optional, depending on JTAG hardware)
    */
   explicit Jtag(uint8_t tms, uint8_t tdi, uint8_t tdo, uint8_t tck, uint8_t trst):
-      bus(JtagPin(tms, OUTPUT), JtagPin(tdi, OUTPUT), JtagPin(tdo, INPUT), JtagPin(tck, OUTPUT), JtagPin(trst, OUTPUT))
+      bus(GpioPin(tms, OUTPUT), GpioPin(tdi, OUTPUT), GpioPin(tdo, INPUT), GpioPin(tck, OUTPUT), GpioPin(trst, OUTPUT))
   {
   }
 
@@ -212,5 +212,5 @@ private:
   static constexpr uint8_t DR_TMS_PRE_LEN = 3;
   static constexpr uint8_t DR_TMS_POST_LEN = 2;
 
-  JtagBus bus;
+  JtagGpio bus;
 };

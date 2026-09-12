@@ -1,12 +1,12 @@
 /**
- * \file         JtagPin.cpp
+ * \file         GpioPin.cpp
  * \author       Aliaksander Kavalchuk (aliaksander.kavalchuk@gmail.com)
- * \brief        This file contains the prototypes for the JtagPin class which is used for managing individual pins in
+ * \brief        This file contains the prototypes for the GpioPin class which is used for managing individual pins in
  *               JTAG interface.
  */
 
 //_____ I N C L U D E S _______________________________________________________
-#include "JtagPin.hpp"
+#include "GpioPin.hpp"
 
 #include <Arduino.h>
 
@@ -14,43 +14,43 @@
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S _________________________________________________________
-JtagPin::JtagPin(int pin, int dir)
+GpioPin::GpioPin(int pin, int dir)
 {
   assert(dir == INPUT || dir == OUTPUT);
   this->assign(pin, dir);
 }
 
-void JtagPin::setHigh()
+void GpioPin::setHigh()
 {
   this->setValue(HIGH);
 }
 
-void JtagPin::setLow()
+void GpioPin::setLow()
 {
   this->setValue(LOW);
 }
 
-int JtagPin::get() const
+int GpioPin::get() const
 {
   assert(this->dir == INPUT);
   return digitalRead(this->pin);
 }
 
-void JtagPin::pulseHigh(int us)
+void GpioPin::pulseHigh(int us)
 {
   this->setHigh();
   delayMicroseconds(us);
   this->setLow();
 }
 
-void JtagPin::pulseLow(int us)
+void GpioPin::pulseLow(int us)
 {
   this->setHigh();
   delayMicroseconds(us);
   this->setLow();
 }
 
-void JtagPin::setValue(int value)
+void GpioPin::setValue(int value)
 {
   assert(value == LOW || value == HIGH);
   assert(this->dir == OUTPUT);
@@ -58,7 +58,7 @@ void JtagPin::setValue(int value)
   digitalWrite(this->pin, value);
 }
 
-void JtagPin::assign(int pin, int dir)
+void GpioPin::assign(int pin, int dir)
 {
   assert(dir == INPUT || dir == OUTPUT);
 
@@ -69,13 +69,13 @@ void JtagPin::assign(int pin, int dir)
   pinMode(this->pin, this->dir);
 }
 
-void JtagPin::setDir(int dir)
+void GpioPin::setDir(int dir)
 {
   assert(dir == INPUT || dir == OUTPUT);
   this->dir = dir;
 }
 
-int JtagPin::getDir() const
+int GpioPin::getDir() const
 {
   return this->dir;
 }

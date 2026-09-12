@@ -8,11 +8,11 @@ static uint8_t sent[32];
 static uint8_t sentTms[32];
 static const uint8_t response[] = {0xA5, 0x63, 0xFE, 0x91};
 
-JtagPin::JtagPin(int, int) {}
-JtagBus::JtagBus(JtagPin a, JtagPin b, JtagPin c, JtagPin d, JtagPin e)
+GpioPin::GpioPin(int, int) {}
+JtagGpio::JtagGpio(GpioPin a, GpioPin b, GpioPin c, GpioPin d, GpioPin e)
   : _tms(a), _tdi(b), _tdo(c), _tck(d), _rst(e) {}
 
-uint8_t JtagBus::clock(uint8_t tms, uint8_t tdi)
+uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
 {
   const size_t tick = clocks++;
   TEST_ASSERT_TRUE(tick < sizeof(sent) * 8);
@@ -20,7 +20,7 @@ uint8_t JtagBus::clock(uint8_t tms, uint8_t tdi)
   JTAG::setBitArray(tick, sent, tdi);
   return JTAG::getBitArray(tick % (sizeof(response) * 8), response);
 }
-JTAG::ERROR JtagBus::setSpeed(uint32_t) { return JTAG::ERROR::NO; }
+JTAG::ERROR JtagGpio::setSpeed(uint32_t) { return JTAG::ERROR::NO; }
 
 void setUp()
 {

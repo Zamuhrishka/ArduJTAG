@@ -1,7 +1,7 @@
 /**
- * \file         JtagBus.hpp
+ * \file         JtagGpio.hpp
  * \author       Aliaksander Kavalchuk (aliaksander.kavalchuk@gmail.com)
- * \brief        This file contains the prototypes and definition for the JtagBus class which manages the JTAG
+ * \brief        This file contains the prototypes and definition for the JtagGpio class which manages the JTAG
  *               communication bus.
  */
 
@@ -9,7 +9,7 @@
 
 //_____ I N C L U D E S _______________________________________________________
 #include <JtagCommon.hpp>
-#include <JtagPin.hpp>
+#include <GpioPin.hpp>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S __________________________________________________________
@@ -21,11 +21,11 @@
  * TAP transitions and buffer validation belong to Jtag. Applications should
  * include Jtag.hpp and use Jtag; this class is not a supported public API.
  */
-class JtagBus
+class JtagGpio
 {
 public:
-  JtagBus() = delete;
-  explicit JtagBus(JtagPin tms, JtagPin tdi, JtagPin tdo, JtagPin tck, JtagPin rst);
+  JtagGpio() = delete;
+  explicit JtagGpio(GpioPin tms, GpioPin tdi, GpioPin tdo, GpioPin tck, GpioPin rst);
 
   /**
    * \brief Set the communication speed of the JTAG bus.
@@ -63,9 +63,9 @@ public:
 private:
   uint32_t last_tck_micros = 0;  // Timestamp of the last clock pulse, used for timing calculations.
   uint32_t min_tck_micros = 1;   // Minimum duration of one TCK (clock) pulse, used to enforce speed limits.
-  JtagPin _tms;
-  JtagPin _tdi;
-  JtagPin _tdo;
-  JtagPin _tck;
-  JtagPin _rst;
+  GpioPin _tms;
+  GpioPin _tdi;
+  GpioPin _tdo;
+  GpioPin _tck;
+  GpioPin _rst;
 };

@@ -1,12 +1,12 @@
 /**
- * \file         JtagBus.cpp
+ * \file         JtagGpio.cpp
  * \author       Aliaksander Kavalchuk (aliaksander.kavalchuk@gmail.com)
- * \brief        This file contains the prototypes and definition for the JtagBus class which manages the JTAG
+ * \brief        This file contains the prototypes and definition for the JtagGpio class which manages the JTAG
  *               communication bus.
  */
 
 //_____ I N C L U D E S _______________________________________________________
-#include "JtagBus.hpp"
+#include "JtagGpio.hpp"
 
 #include <Arduino.h>
 
@@ -18,14 +18,14 @@
 #define DEBUG_MODE
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S _________________________________________________________
-JtagBus::JtagBus(JtagPin tms, JtagPin tdi, JtagPin tdo, JtagPin tck, JtagPin rst):
+JtagGpio::JtagGpio(GpioPin tms, GpioPin tdi, GpioPin tdo, GpioPin tck, GpioPin rst):
     _tms(tms), _tdi(tdi), _tdo(tdo), _tck(tck), _rst(rst)
 {
   this->last_tck_micros = micros();
   this->min_tck_micros = 1;
 }
 
-JTAG::ERROR JtagBus::setSpeed(uint32_t khz)
+JTAG::ERROR JtagGpio::setSpeed(uint32_t khz)
 {
   if (khz == 0 || khz > static_cast<uint32_t>(JTAG::CONSTANTS::MAX_SPEED_KHZ))
   {
@@ -41,19 +41,19 @@ JTAG::ERROR JtagBus::setSpeed(uint32_t khz)
   return JTAG::ERROR::NO;
 }
 
-uint32_t JtagBus::getSpeed() const
+uint32_t JtagGpio::getSpeed() const
 {
   return this->min_tck_micros;
 }
 
-void JtagBus::pulseTrst()
+void JtagGpio::pulseTrst()
 {
   this->_rst.setLow();
   delayMicroseconds(this->min_tck_micros);
   this->_rst.setHigh();
 }
 
-uint8_t JtagBus::clock(uint8_t tms, uint8_t tdi)
+uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
 {
   assert(tms == HIGH || tms == LOW);
   assert(tdi == HIGH || tdi == LOW);

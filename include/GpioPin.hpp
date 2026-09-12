@@ -1,7 +1,7 @@
 /**
- * \file         JtagPin.hpp
+ * \file         GpioPin.hpp
  * \author       Aliaksander Kavalchuk (aliaksander.kavalchuk@gmail.com)
- * \brief        This file contains the prototypes for the JtagPin class which is used for managing individual pins in
+ * \brief        This file contains the prototypes for the GpioPin class which is used for managing individual pins in
  *               JTAG interface.
  */
 
@@ -14,14 +14,14 @@
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S __________________________________________________________
 /**
- * \brief The JtagPin class is responsible for controlling a single pin used in the JTAG communication interface.
+ * \brief The GpioPin class is responsible for controlling a single pin used in the JTAG communication interface.
  *        It allows setting the pin high or low, pulsing, and reading its value.
  */
-class JtagPin
+class GpioPin
 {
 public:
-  JtagPin() = delete;
-  explicit JtagPin(int pin, int dir);
+  GpioPin() = delete;
+  explicit GpioPin(int pin, int dir);
 
   /**
    * \brief Set the pin to high voltage level.
@@ -64,7 +64,7 @@ public:
   void setValue(int value);
 
   /**
-   * \brief Assign a new pin number and direction to the JtagPin.
+   * \brief Assign a new pin number and direction to the GpioPin.
    *
    * \param pin The new pin number to be assigned.
    * \param dir The direction of the pin (input or output).

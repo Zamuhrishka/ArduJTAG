@@ -160,14 +160,14 @@ More examples of using this library can be found in [examples](./examples/).
 ## Internal implementation
 
 Applications use `Jtag` from `Jtag.hpp` and `BitBuffer` for packed bit sequences.
-`Jtag` is implemented entirely in its header; `JtagBus` and `JtagPin` retain
+`Jtag` is implemented entirely in its header; `JtagGpio` and `GpioPin` retain
 separate implementation files.
-`Jtag` owns a concrete `JtagBus`, declared in `include/JtagBus.hpp`, as an
+`Jtag` owns a concrete `JtagGpio`, declared in `include/JtagGpio.hpp`, as an
 internal implementation detail, outside the supported application API.
 
 `Jtag` validates buffers, processes bit sequences, and handles TAP transitions.
-`JtagBus` generates individual clocks and handles GPIO, timing, and sampling TDO. `Jtag::reset()` generates five TCK cycles with
-TMS high; the internal `JtagBus::pulseTrst()` instead pulses the physical TRST
+`JtagGpio` generates individual clocks and handles GPIO, timing, and sampling TDO. `Jtag::reset()` generates five TCK cycles with
+TMS high; the internal `JtagGpio::pulseTrst()` instead pulses the physical TRST
 pin low, then high, without generating clocks.
 
 ## Development setup

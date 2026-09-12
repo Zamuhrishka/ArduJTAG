@@ -1,4 +1,4 @@
-// This sketch demonstrates a more complex use of the ArduJtag library to interact with a microchip via JTAG.
+// This sketch demonstrates a more complex use of the ArduJTAG library to interact with a microchip via JTAG.
 // It shows a series of operations including enabling JTAG functionality, writing to registers, and reading back data.
 // The sketch sets up the JTAG interface, sends various instructions and data, and prints out the results.
 // Such operations are typical in configuring and verifying the state of a JTAG-compatible device.

@@ -1,4 +1,4 @@
-// This sketch demonstrates how to use the ArduJtag library to perform a sequence of JTAG operations.
+// This sketch demonstrates how to use the ArduJTAG library to perform a sequence of JTAG operations.
 // It sets up the JTAG pins, initializes the JTAG interface, and then sends a specific sequence of operations
 // to the JTAG device. After the sequence is complete, the resulting output is read into a buffer and printed
 // to the Serial Monitor. This is a common operation for interacting with and testing JTAG-compatible devices.

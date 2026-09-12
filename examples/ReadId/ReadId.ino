@@ -1,4 +1,4 @@
-// This sketch demonstrates how to use the ArduJtag library to read the ID of a microchip via JTAG.
+// This sketch demonstrates how to use the ArduJTAG library to read the ID of a microchip via JTAG.
 // It sets up the JTAG pins, initializes the JTAG interface, sends a standard ID code instruction,
 // reads the response, and prints the chip ID to the Serial Monitor. This is a common operation
 // in verifying communication with and the identity of a JTAG-compatible device.

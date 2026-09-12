@@ -1,5 +1,5 @@
 {
-    "name": "ArduJtag",
+    "name": "ArduJTAG",
     "version": "1.0.2",
     "description": "This is a lightweight and easy-to-use library for interfacing with JTAG devices using Arduino boards.",
     "keywords": "jtag, boundaryscan",

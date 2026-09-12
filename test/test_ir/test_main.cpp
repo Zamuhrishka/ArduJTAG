@@ -20,11 +20,6 @@ uint8_t JtagBus::clock(uint8_t tms, uint8_t tdi)
   return 0;
 }
 
-JTAG::ERROR JtagBus::clockCycles(size_t, const uint8_t[], const uint8_t[], uint8_t *)
-{
-  TEST_FAIL_MESSAGE("IR must use individual bus clocks");
-  return JTAG::ERROR::NO;
-}
 JTAG::ERROR JtagBus::setSpeed(uint32_t) { return JTAG::ERROR::NO; }
 
 void setUp()

@@ -16,7 +16,6 @@
 #include <assert.h>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________
-const uint8_t RESET_TMS = 0x1F;
 const uint8_t RESET_TMS_LEN = 5;
 
 const uint8_t IR_TMS_PRE = 6;
@@ -129,11 +128,9 @@ void Jtag::dr(const uint8_t *data, uint32_t length, uint8_t *output)
 
 void Jtag::reset()
 {
-  uint8_t tms = RESET_TMS;
-  uint8_t tdi = 0x00;
-  uint8_t tdo = 0x00;
-
-  this->bus.clockCycles(RESET_TMS_LEN, &tms, &tdi, &tdo);
+  for (size_t i = 0; i < RESET_TMS_LEN; ++i) {
+    bus.clock(1, 0);
+  }
 }
 
 JTAG::ERROR Jtag::setSpeed(uint32_t khz)

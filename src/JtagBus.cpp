@@ -92,23 +92,3 @@ uint8_t JtagBus::clock(uint8_t tms, uint8_t tdi)
 
   return tdo;
 }
-
-JTAG::ERROR JtagBus::clockCycles(size_t cycleCount, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo)
-{
-  assert(tms != nullptr);
-  assert(tdi != nullptr);
-  assert(tdo != nullptr);
-  assert(cycleCount != 0);
-
-  if (cycleCount > static_cast<uint32_t>(JTAG::CONSTANTS::MAX_SEQUENCE_LEN))
-  {
-    return JTAG::ERROR::INVALID_SEQUENCE_LEN;
-  }
-
-  for (size_t i = 0; i < cycleCount; i++)
-  {
-    JTAG::setBitArray(i, tdo, this->clock(JTAG::getBitArray(i, tms), JTAG::getBitArray(i, tdi)));
-  }
-
-  return JTAG::ERROR::NO;
-}

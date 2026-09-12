@@ -134,7 +134,10 @@ public:
     }
 
     tdo.resize(cycleCount);
-    return bus.clockCycles(cycleCount, tms.data(), tdi.data(), tdo.data());
+    for (size_t i = 0; i < cycleCount; ++i) {
+      tdo.set(i, bus.clock(tms.getBit(i), tdi.getBit(i)));
+    }
+    return JTAG::ERROR::NO;
   }
 
   /**

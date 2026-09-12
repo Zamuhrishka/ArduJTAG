@@ -8,10 +8,6 @@ JtagBus::JtagBus(JtagPin a, JtagPin b, JtagPin c, JtagPin d, JtagPin e)
   : _tms(a), _tdi(b), _tdo(c), _tck(d), _rst(e) {}
 
 uint8_t JtagBus::clock(uint8_t, uint8_t) { return 0; }
-JTAG::ERROR JtagBus::clockCycles(size_t, const uint8_t[], const uint8_t[], uint8_t *)
-{
-  return JTAG::ERROR::NO;
-}
 JTAG::ERROR JtagBus::setSpeed(uint32_t) { return JTAG::ERROR::NO; }
 
 void setUp() {}

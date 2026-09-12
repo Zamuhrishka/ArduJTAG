@@ -6,36 +6,25 @@
 static size_t clocks;
 static uint8_t sent[32];
 static uint8_t sentTms[32];
-static size_t cycleCalls;
 static const uint8_t response[] = {0xA5, 0x63, 0xFE, 0x91};
 
 JtagPin::JtagPin(int, int) {}
 JtagBus::JtagBus(JtagPin a, JtagPin b, JtagPin c, JtagPin d, JtagPin e)
   : _tms(a), _tdi(b), _tdo(c), _tck(d), _rst(e) {}
 
-uint8_t JtagBus::clock(uint8_t, uint8_t)
+uint8_t JtagBus::clock(uint8_t tms, uint8_t tdi)
 {
-  ++clocks;
-  return 0;
-}
-
-JTAG::ERROR JtagBus::clockCycles(size_t count, const uint8_t tms[], const uint8_t tdi[], uint8_t *tdo)
-{
-  ++cycleCalls;
-  for (size_t i = 0; i < count; ++i) {
-    ++clocks;
-    JTAG::setBitArray(i, sentTms, JTAG::getBitArray(i, tms));
-    JTAG::setBitArray(i, sent, JTAG::getBitArray(i, tdi));
-    JTAG::setBitArray(i, tdo, JTAG::getBitArray(i % (sizeof(response) * 8), response));
-  }
-  return JTAG::ERROR::NO;
+  const size_t tick = clocks++;
+  TEST_ASSERT_TRUE(tick < sizeof(sent) * 8);
+  JTAG::setBitArray(tick, sentTms, tms);
+  JTAG::setBitArray(tick, sent, tdi);
+  return JTAG::getBitArray(tick % (sizeof(response) * 8), response);
 }
 JTAG::ERROR JtagBus::setSpeed(uint32_t) { return JTAG::ERROR::NO; }
 
 void setUp()
 {
   clocks = 0;
-  cycleCalls = 0;
   memset(sentTms, 0, sizeof(sentTms));
   memset(sent, 0, sizeof(sent));
 }
@@ -63,7 +52,6 @@ static void check_clock_cycles(size_t count)
     tdi.set(i, i % 5 == 0);
   }
   TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::NO), int(jtag.clockCycles(tms, tdi, tdo)));
-  TEST_ASSERT_EQUAL_UINT32(1, cycleCalls);
   TEST_ASSERT_EQUAL_UINT32(count, clocks);
   TEST_ASSERT_EQUAL_UINT32(count, tdo.bitCount());
   for (size_t i = 0; i < count; ++i) {
@@ -99,7 +87,6 @@ static void check_invalid_cycles(size_t tmsLength, size_t tdiLength, JTAG::ERROR
   const auto before = tdo;
   TEST_ASSERT_EQUAL_INT(int(expected), int(jtag.clockCycles(tms, tdi, tdo)));
   TEST_ASSERT_EQUAL_UINT32(0, clocks);
-  TEST_ASSERT_EQUAL_UINT32(0, cycleCalls);
   TEST_ASSERT_EQUAL_UINT32(before.bitCount(), tdo.bitCount());
   TEST_ASSERT_EQUAL_HEX8_ARRAY(before.data(), tdo.data(), (tdo.capacity() + 7) / 8);
   TEST_ASSERT_EQUAL_UINT32(tmsLength, tms.bitCount());
@@ -125,14 +112,23 @@ void test_clock_cycles_small_output()
   auto output = BitBuffer<8>::fromBytes({0xCC});
   TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_BUFFER), int(jtag.clockCycles(input, input, output)));
   TEST_ASSERT_EQUAL_UINT32(0, clocks);
-  TEST_ASSERT_EQUAL_UINT32(0, cycleCalls);
   TEST_ASSERT_EQUAL_UINT32(8, output.bitCount());
   TEST_ASSERT_EQUAL_HEX8(0xCC, output.byte(0));
+}
+
+void test_reset_generates_five_tms_high_clocks()
+{
+  Jtag jtag(1, 2, 3, 4, 5);
+  jtag.reset();
+  TEST_ASSERT_EQUAL_UINT32(5, clocks);
+  TEST_ASSERT_EQUAL_HEX8(0x1F, sentTms[0]);
+  TEST_ASSERT_EQUAL_HEX8(0, sent[0]);
 }
 
 int main()
 {
   UNITY_BEGIN();
+  RUN_TEST(test_reset_generates_five_tms_high_clocks);
   RUN_TEST(test_clock_cycles_single_bit);
   RUN_TEST(test_clock_cycles_full_byte);
   RUN_TEST(test_clock_cycles_partial_byte);

@@ -18,5 +18,6 @@ behavior checks remain enabled.
 The tests compile the real Jtag.cpp and JtagCommon.cpp with simulated JtagBus and
 JtagPin implementations and a minimal Arduino.h. They verify buffer packing,
 validation, transmitted bits, received bits, partial-byte padding and raw output
-bounds. They do not verify GPIO timing, TAP state transitions or physical JTAG
-communication.
+bounds. Sequence tests record individual bus clocks; IR tests verify TAP
+transitions, and reset is checked for five clocks with TMS high. They do not
+verify GPIO timing or physical JTAG communication.

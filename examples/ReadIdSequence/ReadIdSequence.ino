@@ -18,7 +18,7 @@
 Jtag jtag = Jtag(TMS, TDI, TDO, TCK, RST);
 
 // Create a buffer to store the output data
-BitBuffer<54> output;
+BitBuffer<54> id;
 
 void setup()
 {
@@ -29,25 +29,22 @@ void loop()
 {
   // Define the sequence of TMS and TDI values to send in the JTAG operation
   // For read ID for chip need to send next bits:
-  // TMS: 01100 | 000000001 | 10 | 100 | 000000000000000000000000000000001 | 10
+  // TMS: 01100 | 000000001 | 10 | 100 | 000000000000000000000000000000011 | 00
   // TDI: 00000 | 011111111 | 00 | 000 | 000000000000000000000000000000000 | 00
+  const auto tms = BitBuffer<54>::fromBits("01100" "000000001" "10" "100" "000000000000000000000000000000011" "00");
+  const auto tdi = BitBuffer<54>::fromBits("00000" "011111111" "00" "000" "000000000000000000000000000000000" "00");
 
-  // For more information about format of this arrays please see the README file in
-  // https://github.com/Zamuhrishka/ArduJTAG.git
-  auto tms = BitBuffer<54>::fromBytes({0x06, 0x60, 0x01, 0x00, 0x00, 0x00, 0x0C}, 54);
-  auto tdi = BitBuffer<54>::fromBytes({0xC0, 0x3F, 0x00, 0x00, 0x00, 0x00, 0x00}, 54);
-
-  jtag.reset();                             // Reset the JTAG state machine
-  if (jtag.clockCycles(tms, tdi, output) != JTAG::ERROR::NO) {
+  jtag.reset();
+  if (jtag.clockCycles(tms, tdi, id) != JTAG::ERROR::NO) {
     Serial.println("JTAG transfer failed");
     return;
   }
 
   Serial.print("> ");
 
-  for (size_t i = 0; i < output.byteCount(); i++)
+  for (size_t i = 0; i < id.byteCount(); i++)
   {
-    Serial.print(output.byte(i), HEX);
+    Serial.print(id.byte(i), HEX);
     Serial.print(" ");
   }
   Serial.println(" ");

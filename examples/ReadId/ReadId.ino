@@ -24,21 +24,21 @@ void setup()
 
 void loop()
 {
-  uint16_t instruction = 0x1FE;  // Instruction to send to the IR register
-  uint16_t length = 9;           // Length of the instruction in bits
-  auto input = BitBuffer<32>::fromBytes({0x00, 0x00, 0x00, 0x00});
+  const auto instruction = BitBuffer<32>::fromBytes({0x01, 0xFE}, 9);  // Instruction to send to the IR register
+  const auto input = BitBuffer<32>::fromBytes({0x00, 0x00, 0x00, 0x00});
   BitBuffer<32> output;
 
   jtag.reset();
-  jtag.ir(instruction, length);
-
+  jtag.ir(instruction);
   JTAG::ERROR status = jtag.dr(input, output);
+
   if (status != JTAG::ERROR::NO) {
     Serial.println("Error occurred while reading JTAG data register.");
   } else {
     uint32_t id = 0;
-    for (size_t i = 0; i < output.byteCount(); ++i)
+    for (size_t i = 0; i < output.byteCount(); ++i) {
       id |= uint32_t(output.byte(i)) << (8 * i);
+    }
 
     Serial.print("> ");
     Serial.println(id, HEX);

@@ -177,6 +177,75 @@ BitBuffer<32> response;
 JTAG::ERROR status = chain.transfer(1, instruction, request, response);
 ```
 
+See [TransferChain](examples/TransferChain/TransferChain.ino) for a complete
+`transfer()` sketch with error handling, response output, and a raw-instruction
+alternative.
+
+See [EnableArmDapChain](examples/EnableArmDapChain/EnableArmDapChain.ino) for
+the `EnableArmDap` register sequence expressed with named DPACC/APACC transfers.
+Its requests and responses contain 35 target bits; the chain adds the BYPASS bit.
+It preserves the original reset points; the final zero request also reloads
+APACC because every `transfer()` programs IR. ACK/WAIT handling remains outside
+this example.
+
+### Named instruction profiles
+
+A profile gives commands names without storing a command table in each device:
+
+```cpp
+#include <profiles/ArmJtagDp.hpp>
+
+JtagChain<2, 40> namedChain(jtag);
+if (!namedChain.add(JtagDevice(5)) ||
+    !namedChain.add(JtagDevice::fromProfile<ArmJtagDp>())) {
+  return;
+}
+jtag.reset();
+JTAG::ERROR status = namedChain.transfer(
+    1, ArmJtagDp::Instruction::Idcode, request, response);
+```
+
+Use `fromProfile<ArmJtagDp>()` instead of `JtagDevice(4)` when configuring that
+device. A plain device has no profile, even if its IR length matches.
+`ArmJtagDp` supports four-bit IR only and provides `Abort`, `Dpacc`, `Apacc`,
+`Idcode`, and `Bypass`, using the encodings in the
+[Arm JTAG-DP register summary](https://developer.arm.com/documentation/100536/0302/About-the-programmers-model/DAP-registers/JTAG-DP-registers/JTAG-DP-register-summary).
+Eight-bit JTAG-DP variants require a different profile.
+
+Named transfers return `INVALID_DEVICE` for an absent or mismatched profile,
+`INVALID_INSTRUCTION` for unsupported enum values, and `INVALID_BUFFER` for a
+wrong fixed DR length, before generating clocks or modifying output.
+`ArmJtagDp::drLength()` specifies 35 bits for Abort/Dpacc/Apacc, 32 for Idcode,
+and one for Bypass, matching the Arm register summary linked above.
+These widths describe the target alone; the chain adds other devices' BYPASS bits.
+The raw `BitBuffer` overload remains available for explicitly sized exchanges.
+The caller still handles payload formats, response pipelines and ACKs.
+
+To read IDCODE without creating request and response buffers:
+
+```cpp
+uint32_t idcode = 0;
+JTAG::ERROR status = namedChain.readIdcode<ArmJtagDp>(1, idcode);
+if (status == JTAG::ERROR::NO) Serial.println(idcode, HEX);
+```
+
+The helper uses the profile's `Instruction::Idcode`, requires a fixed 32-bit DR,
+sends zeros, and assembles the response in transmission order into `uint32_t`.
+It leaves `idcode` unchanged on failure. The chain must have room for the 32
+IDCODE bits plus all BYPASS bits. It does not reset the chain or check the value
+against an expected device ID.
+
+To define another profile, provide a distinct `Instruction` enum, a constant
+`IrLength`, a static `encode(Instruction)` returning `BitBuffer<IrLength>`
+(empty for an unsupported command), and `drLength(Instruction)`. Return the
+fixed target DR width or zero to allow a caller-selected variable width.
+For `readIdcode<YourProfile>()`, expose `Instruction::Idcode` and make its
+`drLength()` a constant expression equal to 32. Specialize
+`JtagInstructionProfile<YourProfile::Instruction>` by inheriting `YourProfile`.
+Use one distinct enum per profile. Devices store a profile identity pointer;
+there is one identity byte per used enum and no per-device instruction table,
+RTTI, virtual dispatch, or dynamic allocation.
+
 Each `transfer()` programs the target IR and all-ones BYPASS instructions for
 other devices, then exchanges DR. Non-target devices contribute one zero input
 bit each; only target response bits are returned. This assumes standard all-ones

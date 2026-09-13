@@ -24,3 +24,9 @@ verify GPIO timing or physical JTAG communication.
 
 Chain tests verify combined IR/DR ordering, BYPASS placement, response extraction,
 in-place transfers, repeated instruction selection and validation without clocks.
+
+Profile tests compare named instructions to raw wire traces and reject unknown
+commands and mismatched profiles, including devices with equal IR lengths.
+
+DR width tests reject shorter and longer named requests before clocks. IDCODE
+tests check 32-bit assembly, BYPASS offsets and unchanged results on failure.

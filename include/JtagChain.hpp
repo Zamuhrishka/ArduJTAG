@@ -39,6 +39,35 @@ public:
   size_t deviceCount() const { return count; }
 
   /**
+   * @brief Transfer a named command belonging to the target's declared profile.
+   * A missing or different profile returns INVALID_DEVICE. Unsupported enum
+   * values return INVALID_INSTRUCTION. Both fail before clocks/output changes.
+   * A wrong fixed DR length returns INVALID_BUFFER. Profiles may return zero
+   * from drLength() for variable-width commands. Payload contents are unchecked.
+   */
+  template <typename Instruction, size_t InputCapacity, size_t OutputCapacity>
+  auto transfer(size_t target, Instruction instruction,
+                const BitBuffer<InputCapacity> &input, BitBuffer<OutputCapacity> &output)
+    -> decltype(JtagInstructionProfile<Instruction>::encode(instruction), JTAG::ERROR::NO)
+  {
+    if (target >= count || !devices[target].template hasProfile<Instruction>()) {
+      return JTAG::ERROR::INVALID_DEVICE;
+    }
+
+    const auto bits = JtagInstructionProfile<Instruction>::encode(instruction);
+    if (!bits.valid()) {
+      return JTAG::ERROR::INVALID_INSTRUCTION;
+    }
+
+    const size_t requiredBits = JtagInstructionProfile<Instruction>::drLength(instruction);
+    if (requiredBits != 0 && input.bitCount() != requiredBits) {
+      return JTAG::ERROR::INVALID_BUFFER;
+    }
+
+    return transfer(target, bits, input, output);
+  }
+
+  /**
    * @brief Select an instruction and exchange the target DR in one operation.
    * @param target Device index in TDI-to-TDO order.
    * @return INVALID_DEVICE for an unknown index; INVALID_BUFFER for invalid
@@ -91,9 +120,37 @@ public:
     return JTAG::ERROR::NO;
   }
 
+  /**
+   * @brief Read a profile's 32-bit IDCODE using a zero-filled request.
+   * Profile must expose Instruction::Idcode with drLength() == 32.
+   * Returns the transfer status and leaves idcode unchanged on failure.
+   * Bit zero received is bit zero of the uint32_t, independent of host byte order.
+   * Does not reset the chain or verify that the returned ID matches a device.
+   */
+  template <typename Profile>
+  JTAG::ERROR readIdcode(size_t target, uint32_t &idcode)
+  {
+    static_assert(Profile::drLength(Profile::Instruction::Idcode) == 32,
+                  "IDCODE must have a fixed 32-bit DR");
+    const auto request = BitBuffer<32>::fromBytes({0, 0, 0, 0});
+    BitBuffer<32> response;
+    const JTAG::ERROR status = transfer(target, Profile::Instruction::Idcode, request, response);
+    if (status != JTAG::ERROR::NO) {
+      return status;
+    }
+
+    uint32_t value = 0;
+    for (size_t i = 0; i < 4; ++i) {
+      value |= static_cast<uint32_t>(response.byte(i)) << (8 * i);
+    }
+    idcode = value;
+
+    return JTAG::ERROR::NO;
+  }
+
 private:
-  Jtag &jtag;
-  JtagDevice devices[MaxDevices];
-  size_t count = 0;
-  size_t irBits = 0;
+  Jtag &jtag;  // Reference to the Jtag instance used for all transfers.
+  JtagDevice devices[MaxDevices];  // Array of devices in physical TDI-to-TDO order.
+  size_t count = 0;  // Number of devices added to the chain.
+  size_t irBits = 0;  // Total IR length of all devices, including BYPASS bits.
 };

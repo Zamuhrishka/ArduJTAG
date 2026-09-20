@@ -2,6 +2,7 @@
 
 #include <Jtag.hpp>
 #include <JtagDevice.hpp>
+#include <JtagDeviceAccess.hpp>
 
 /**
  * @brief Fixed-capacity chain, with devices added in physical TDI-to-TDO order.
@@ -37,6 +38,44 @@ public:
   }
 
   size_t deviceCount() const { return count; }
+
+  /** @brief Check that an index exists and has the requested instruction profile. */
+  template <typename Profile>
+  bool matchesProfile(size_t index) const
+  {
+    return index < count && devices[index].template hasProfile<typename Profile::Instruction>();
+  }
+
+  /**
+   * @brief Create a lightweight device access object, without generating clocks.
+   * The returned object refers to this chain, which must outlive it.
+   * An invalid index/profile produces an invalid object; operations return
+   * INVALID_DEVICE until that index contains a matching device.
+   */
+  template <typename Profile>
+  JtagDeviceAccess<Profile, JtagChain> device(size_t index)
+  {
+    return JtagDeviceAccess<Profile, JtagChain>(*this, index);
+  }
+
+  /**
+   * @brief Load only IR, selecting BYPASS for every non-target device.
+   * No DR clocks are generated. The selected mode lasts until the next IR
+   * update or reset; a later operation on another device puts this one in BYPASS.
+   */
+  template <typename Instruction>
+  auto select(size_t target, Instruction instruction)
+    -> decltype(JtagInstructionProfile<Instruction>::encode(instruction), JTAG::ERROR::NO)
+  {
+    if (target >= count || !devices[target].template hasProfile<Instruction>()) {
+      return JTAG::ERROR::INVALID_DEVICE;
+    }
+    const auto bits = JtagInstructionProfile<Instruction>::encode(instruction);
+    if (!bits.valid()) return JTAG::ERROR::INVALID_INSTRUCTION;
+    if (bits.bitCount() != devices[target].irLength()) return JTAG::ERROR::INVALID_BUFFER;
+    BitBuffer<Capacity> request;
+    return shiftInstruction(target, bits, request);
+  }
 
   /**
    * @brief Transfer a named command belonging to the target's declared profile.
@@ -91,16 +130,7 @@ public:
 
     BitBuffer<Capacity> request;
     BitBuffer<Capacity> response;
-    request.resize(irBits);
-    size_t offset = 0;
-    // Bits for the device nearest TDO must enter the chain first.
-    for (size_t position = count; position > 0; --position) {
-      const size_t index = position - 1;
-      for (size_t bit = 0; bit < devices[index].irLength(); ++bit) {
-        request.set(offset++, index == target ? instruction.getBit(bit) : true);
-      }
-    }
-    const JTAG::ERROR irStatus = jtag.ir(request);
+    const JTAG::ERROR irStatus = shiftInstruction(target, instruction, request);
     if (irStatus != JTAG::ERROR::NO) return irStatus;
 
     const size_t drBits = dataBits + count - 1;
@@ -120,35 +150,25 @@ public:
     return JTAG::ERROR::NO;
   }
 
-  /**
-   * @brief Read a profile's 32-bit IDCODE using a zero-filled request.
-   * Profile must expose Instruction::Idcode with drLength() == 32.
-   * Returns the transfer status and leaves idcode unchanged on failure.
-   * Bit zero received is bit zero of the uint32_t, independent of host byte order.
-   * Does not reset the chain or verify that the returned ID matches a device.
-   */
-  template <typename Profile>
-  JTAG::ERROR readIdcode(size_t target, uint32_t &idcode)
-  {
-    static_assert(Profile::drLength(Profile::Instruction::Idcode) == 32,
-                  "IDCODE must have a fixed 32-bit DR");
-    const auto request = BitBuffer<32>::fromBytes({0, 0, 0, 0});
-    BitBuffer<32> response;
-    const JTAG::ERROR status = transfer(target, Profile::Instruction::Idcode, request, response);
-    if (status != JTAG::ERROR::NO) {
-      return status;
-    }
-
-    uint32_t value = 0;
-    for (size_t i = 0; i < 4; ++i) {
-      value |= static_cast<uint32_t>(response.byte(i)) << (8 * i);
-    }
-    idcode = value;
-
-    return JTAG::ERROR::NO;
-  }
 
 private:
+  // Caller validates the target and instruction before generating any clocks.
+  template <size_t IrCapacity>
+  JTAG::ERROR shiftInstruction(size_t target, const BitBuffer<IrCapacity> &instruction,
+                               BitBuffer<Capacity> &request)
+  {
+    request.resize(irBits);
+    size_t offset = 0;
+    // Bits for the device nearest TDO must enter the chain first.
+    for (size_t position = count; position > 0; --position) {
+      const size_t index = position - 1;
+      for (size_t bit = 0; bit < devices[index].irLength(); ++bit) {
+        request.set(offset++, index == target ? instruction.getBit(bit) : true);
+      }
+    }
+    return jtag.ir(request);
+  }
+
   Jtag &jtag;  // Reference to the Jtag instance used for all transfers.
   JtagDevice devices[MaxDevices];  // Array of devices in physical TDI-to-TDO order.
   size_t count = 0;  // Number of devices added to the chain.

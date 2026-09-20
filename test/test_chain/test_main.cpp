@@ -236,7 +236,7 @@ void test_read_idcode_extracts_uint32_at_both_chain_ends()
     responseOffset = 1 - target;
     responseBits = 32;
     uint32_t id = 0;
-    TEST_ASSERT_EQUAL_INT(0, int(chain.readIdcode<ArmJtagDp>(target, id)));
+    TEST_ASSERT_EQUAL_INT(0, int(chain.device<ArmJtagDp>(target).readIdcode(id)));
     TEST_ASSERT_EQUAL_HEX32(0x89CD03A5UL, id);
     TEST_ASSERT_EQUAL_UINT32(53, clocks);
     const size_t irOffset = 5 + (1 - target) * 4;
@@ -254,16 +254,162 @@ void test_read_idcode_failure_preserves_value()
   chain.add(JtagDevice(4));
   chain.add(JtagDevice::fromProfile<ArmJtagDp>());
   uint32_t id = 0xDEADBEEFUL;
-  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE), int(chain.readIdcode<ArmJtagDp>(0, id)));
-  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE), int(chain.readIdcode<ArmJtagDp>(2, id)));
-  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_SEQUENCE_LEN), int(chain.readIdcode<ArmJtagDp>(1, id)));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE), int(chain.device<ArmJtagDp>(0).readIdcode(id)));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE), int(chain.device<ArmJtagDp>(2).readIdcode(id)));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_SEQUENCE_LEN), int(chain.device<ArmJtagDp>(1).readIdcode(id)));
   TEST_ASSERT_EQUAL_UINT32(0, clocks);
   TEST_ASSERT_EQUAL_HEX32(0xDEADBEEFUL, id);
+}
+
+void test_device_access_validates_and_preserves_index()
+{
+  Jtag jtag(1, 2, 3, 4, 5);
+  JtagChain<3, 40> chain(jtag);
+  auto device = chain.device<OtherProfile>(0); // This profile has no IDCODE.
+  auto wrongProfile = chain.device<ArmJtagDp>(0);
+  auto missing = chain.device<OtherProfile>(2);
+  TEST_ASSERT_FALSE(device.valid());
+  const auto input = BitBuffer<8>::fromBytes({0x55});
+  auto output = BitBuffer<8>::fromBytes({0xCC});
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE),
+    int(device.transfer(OtherProfile::Instruction::Read, input, output)));
+  chain.add(JtagDevice::fromProfile<OtherProfile>());
+  TEST_ASSERT_TRUE(device.valid());
+  TEST_ASSERT_FALSE(wrongProfile.valid());
+  TEST_ASSERT_FALSE(missing.valid());
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE),
+    int(wrongProfile.transfer(ArmJtagDp::Instruction::Idcode, input, output)));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE),
+    int(missing.transfer(OtherProfile::Instruction::Read, input, output)));
+  TEST_ASSERT_EQUAL_UINT32(0, clocks);
+  TEST_ASSERT_EQUAL_HEX8(0xCC, output.byte(0));
+  chain.add(JtagDevice(5));
+  auto copy = device;
+  TEST_ASSERT_TRUE(copy.valid());
+  TEST_ASSERT_EQUAL_INT(0, int(copy.transfer(OtherProfile::Instruction::Read, input, output)));
+  // Device 0 is still behind the five-bit BYPASS instruction in transmission order.
+  for (size_t bit = 0; bit < 5; ++bit) TEST_ASSERT_EQUAL_UINT8(1, tdiTrace[5 + bit]);
+  TEST_ASSERT_EQUAL_UINT8(1, tdiTrace[10]);
+  for (size_t bit = 1; bit < 4; ++bit) TEST_ASSERT_EQUAL_UINT8(0, tdiTrace[10 + bit]);
+}
+
+// Synthetic boundary-scan profile: these opcodes do not describe real hardware.
+struct BoundaryProfile
+{
+  static constexpr size_t IrLength = 4;
+  enum class Instruction : uint8_t {
+    Extest = 0, Sample = 2, Preload = 2, SamplePreload = 2,
+    Intest = 3, HighZ = 4, Bypass = 15, Unsupported = 7
+  };
+  static constexpr size_t drLength(Instruction instruction)
+  {
+    return instruction == Instruction::Bypass || instruction == Instruction::HighZ ? 1 : 10;
+  }
+  static BitBuffer<4> encode(Instruction instruction)
+  {
+    if (instruction == Instruction::Unsupported) return BitBuffer<4>();
+    return BitBuffer<4>::fromBytes({static_cast<uint8_t>(instruction)}, 4);
+  }
+};
+template <>
+struct JtagInstructionProfile<BoundaryProfile::Instruction> : BoundaryProfile {};
+
+void test_boundary_modes_generate_only_ir_clocks()
+{
+  Jtag jtag(1, 2, 3, 4, 5);
+  JtagChain<2, 16> chain(jtag);
+  chain.add(JtagDevice(5));
+  chain.add(JtagDevice::fromProfile<BoundaryProfile>());
+  auto device = chain.device<BoundaryProfile>(1);
+  TEST_ASSERT_EQUAL_INT(0, int(device.bypass()));
+  TEST_ASSERT_EQUAL_UINT32(16, clocks);
+  for (size_t bit = 0; bit < 9; ++bit) TEST_ASSERT_EQUAL_UINT8(1, tdiTrace[5 + bit]);
+  setUp();
+  TEST_ASSERT_EQUAL_INT(0, int(device.highZ()));
+  TEST_ASSERT_EQUAL_UINT32(16, clocks);
+  for (size_t bit = 0; bit < 4; ++bit) TEST_ASSERT_EQUAL_UINT8((4 >> bit) & 1, tdiTrace[5 + bit]);
+  for (size_t bit = 4; bit < 9; ++bit) TEST_ASSERT_EQUAL_UINT8(1, tdiTrace[5 + bit]);
+  TEST_ASSERT_EQUAL_UINT8(1, tmsTrace[13]); // Last IR bit exits Shift-IR.
+  TEST_ASSERT_EQUAL_UINT8(1, tmsTrace[14]);
+  TEST_ASSERT_EQUAL_UINT8(0, tmsTrace[15]);
+
+  // ARM JTAG-DP supports BYPASS without any boundary-scan instructions.
+  JtagChain<1, 4> armChain(jtag);
+  armChain.add(JtagDevice::fromProfile<ArmJtagDp>());
+  setUp();
+  TEST_ASSERT_EQUAL_INT(0, int(armChain.device<ArmJtagDp>(0).bypass()));
+  TEST_ASSERT_EQUAL_UINT32(11, clocks);
+}
+
+void test_boundary_methods_exchange_supplied_values()
+{
+  Jtag jtag(1, 2, 3, 4, 5);
+  JtagChain<2, 16> chain(jtag);
+  chain.add(JtagDevice(5));
+  chain.add(JtagDevice::fromProfile<BoundaryProfile>());
+  auto device = chain.device<BoundaryProfile>(1);
+  const auto values = BitBuffer<10>::fromBytes({0x69, 0x02}, 10);
+  const uint8_t codes[] = {2, 2, 2, 0, 3};
+  for (size_t operation = 0; operation < 5; ++operation) {
+    setUp();
+    responseStart = 19;
+    BitBuffer<10> captured;
+    JTAG::ERROR status = JTAG::ERROR::INVALID_INSTRUCTION;
+    switch (operation) {
+      case 0: status = device.sample(values, captured); break;
+      case 1: status = device.preload(values); break;
+      case 2: status = device.samplePreload(values, captured); break;
+      case 3: status = device.extest(values, captured); break;
+      case 4: status = device.intest(values, captured); break;
+    }
+    TEST_ASSERT_EQUAL_INT(0, int(status));
+    TEST_ASSERT_EQUAL_UINT32(32, clocks);
+    for (size_t bit = 0; bit < 4; ++bit) {
+      TEST_ASSERT_EQUAL_UINT8((codes[operation] >> bit) & 1, tdiTrace[5 + bit]);
+    }
+    for (size_t bit = 0; bit < 10; ++bit) {
+      TEST_ASSERT_EQUAL_UINT8(values.getBit(bit), tdiTrace[19 + bit]);
+    }
+    TEST_ASSERT_EQUAL_UINT8(0, tdiTrace[29]); // BYPASS padding.
+    TEST_ASSERT_EQUAL_UINT8(1, tmsTrace[29]);
+    if (operation != 1) {
+      TEST_ASSERT_EQUAL_UINT32(10, captured.bitCount());
+      TEST_ASSERT_EQUAL_HEX8_ARRAY(responseBytes, captured.data(), 2);
+    }
+  }
+}
+
+void test_boundary_validation_without_clocks()
+{
+  Jtag jtag(1, 2, 3, 4, 5);
+  JtagChain<1, 16> chain(jtag);
+  chain.add(JtagDevice::fromProfile<BoundaryProfile>());
+  auto device = chain.device<BoundaryProfile>(0);
+  auto missing = chain.device<BoundaryProfile>(1);
+  auto wrong = chain.device<ArmJtagDp>(0);
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE), int(missing.highZ()));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_DEVICE), int(wrong.bypass()));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_INSTRUCTION),
+    int(device.select(BoundaryProfile::Instruction::Unsupported)));
+  const auto values = BitBuffer<8>::fromBytes({0x55});
+  auto captured = BitBuffer<10>::fromBytes({0xCC});
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_BUFFER), int(device.sample(values, captured)));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_BUFFER), int(device.preload(values)));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_BUFFER), int(device.samplePreload(values, captured)));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_BUFFER), int(device.extest(values, captured)));
+  TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::INVALID_BUFFER), int(device.intest(values, captured)));
+  TEST_ASSERT_EQUAL_UINT32(0, clocks);
+  TEST_ASSERT_EQUAL_UINT32(8, captured.bitCount());
+  TEST_ASSERT_EQUAL_HEX8(0xCC, captured.byte(0));
 }
 
 int main()
 {
   UNITY_BEGIN();
+  RUN_TEST(test_boundary_modes_generate_only_ir_clocks);
+  RUN_TEST(test_boundary_methods_exchange_supplied_values);
+  RUN_TEST(test_boundary_validation_without_clocks);
+  RUN_TEST(test_device_access_validates_and_preserves_index);
   RUN_TEST(test_named_dr_lengths_are_checked_before_clocks);
   RUN_TEST(test_read_idcode_extracts_uint32_at_both_chain_ends);
   RUN_TEST(test_read_idcode_failure_preserves_value);

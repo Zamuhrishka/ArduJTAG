@@ -1,4 +1,4 @@
-// This sketch demonstrates how to use the ArduJTAG library to read the ID of a microchip via JTAG.
+// This sketch demonstrates how to use the ArduJTAG library to read the ID of a STM32F4 via JTAG.
 // It sets up the JTAG pins, initializes the JTAG interface, sends a standard ID code instruction,
 // reads the response, and prints the chip ID to the Serial Monitor. This is a common operation
 // in verifying communication with and the identity of a JTAG-compatible device.
@@ -24,7 +24,12 @@ void setup()
 
 void loop()
 {
-  const auto instruction = BitBuffer<32>::fromBytes({0x01, 0xFE}, 9);  // Instruction to send to the IR register
+  /**
+   * @brief Read the ID code from the STM32F4.
+   * @note The instruction used here is specific to the STM32F4 series and may vary for other devices.
+   * Ensure that the correct instruction is used for your target device
+   */
+  const auto instruction = BitBuffer<32>::fromBytes({0x01, 0xFE}, 9);
   const auto input = BitBuffer<32>::fromBytes({0x00, 0x00, 0x00, 0x00});
   BitBuffer<32> output;
 

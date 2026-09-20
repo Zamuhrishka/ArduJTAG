@@ -1,3 +1,8 @@
+/**
+ * @file ReadIdChain.ino
+ * @brief Example sketch demonstrating how to read the ID code from a JTAG chain with multiple devices.
+ */
+
 #include <JtagChain.hpp>
 #include <profiles/ArmJtagDp.hpp>
 
@@ -18,9 +23,10 @@ void setup()
 
 void loop()
 {
+  auto debugPort = chain.device<ArmJtagDp>(1);
   uint32_t id;
   // Index 1 selects the Debug TAP; BoundaryScan is placed in BYPASS.
-  if (chain.readIdcode<ArmJtagDp>(1, id) != JTAG::ERROR::NO) {
+  if (debugPort.readIdcode(id) != JTAG::ERROR::NO) {
     Serial.println("JTAG transfer failed");
     return;
   }

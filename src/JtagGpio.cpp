@@ -15,7 +15,7 @@
 #include "JtagCommon.hpp"
 
 //_____ C O N F I G S  ________________________________________________________
-#define DEBUG_MODE
+// Define ARDUJTAG_DEBUG to print TMS/TDI/TDO for each clock.
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S _________________________________________________________
 JtagGpio::JtagGpio(GpioPin tms, GpioPin tdi, GpioPin tdo, GpioPin tck, GpioPin rst):
@@ -62,7 +62,7 @@ uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
   this->_tdi.setValue(tdi);
   this->_tms.setValue(tms);
 
-#if defined(DEBUG_MODE)
+#if defined(ARDUJTAG_DEBUG)
   Serial.print(tms);
   Serial.print(tdi);
 #endif
@@ -77,16 +77,16 @@ uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
 
   this->_tck.setHigh();
   delayMicroseconds(this->min_tck_micros);
+
+  // Sample the current bit while TCK is high, before the target advances TDO
+  // on the falling edge. Reading after setLow() loses the first shifted bit.
+  const uint8_t tdo = this->_tdo.get();
   this->_tck.setLow();
 
   // Saving timestamp of last TCK change
   this->last_tck_micros = micros();
 
-  // TDO changes on falling edge of TCK, we are reading
-  // value changed during last jtag_clock.
-  uint8_t tdo = this->_tdo.get();
-
-#if defined(DEBUG_MODE)
+#if defined(ARDUJTAG_DEBUG)
   Serial.println(tdo);
 #endif
 

@@ -24,11 +24,11 @@ The tables below describe what each example does and which API it demonstrates.
 These examples construct whole-chain IR/DR buffers or explicit clock sequences
 and call `Jtag` directly.
 
-| Example | What it does | What it demonstrates |
-| --- | --- | --- |
-| [ReadId](ReadId/ReadId.ino) | Sends a hard-coded 9-bit IR sequence, reads 32 DR bits and prints the result as a hexadecimal integer. | Direct `Jtag::ir()` / `dr()` calls, `BitBuffer::fromBytes()` and manual response decoding. |
-| [ReadIdSequence](ReadIdSequence/ReadIdSequence.ino) | Sends an explicit 54-clock TMS/TDI sequence after reset and prints all captured TDO bytes. | `Jtag::clockCycles()` and bit sequences constructed with `fromBits()`. |
-| [EnableArmDap](EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data; prints the final raw response. | Manually packed whole-chain instructions and data, with explicit resets and separate IR/DR operations. |
+| Example | What it does |
+| --- | --- |
+| [ReadId](ReadId/ReadId.ino) | Sends a hard-coded 9-bit IR sequence, reads 32 DR bits and prints the result as a hexadecimal integer. |
+| [ReadIdSequence](ReadIdSequence/ReadIdSequence.ino) | Sends an explicit 54-clock TMS/TDI sequence after reset and prints all captured TDO bytes. |
+| [EnableArmDap](EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data; prints the final raw response. |
 
 ### Using `JtagChain`
 
@@ -36,13 +36,13 @@ These examples use `JtagChain` and, where applicable, `JtagDeviceAccess` to
 address a device and handle BYPASS padding automatically. `Jtag` supplies the
 underlying transport.
 
-| Example | What it does | What it demonstrates |
-| --- | --- | --- |
-| [ReadIdChain](ReadIdChain/ReadIdChain.ino) | Reads the Debug TAP IDCODE once per second and prints it as a hexadecimal integer. | Device profiles, `chain.device<ArmJtagDp>()` and `JtagDeviceAccess::readIdcode()`. |
-| [TransferChain](TransferChain/TransferChain.ino) | Reads IDCODE through a named instruction and prints the returned bytes, least significant byte first. | `JtagChain::transfer()`, explicit buffers, automatic BYPASS padding and error handling. A comment shows the raw-instruction overload. |
-| [BypassChain](BypassChain/BypassChain.ino) | Selects BYPASS on the Debug TAP and the other TAP, once at startup. | `JtagDeviceAccess::bypass()` and the equivalent `select()` call, using IR without a DR exchange. |
-| [EnableArmDapChain](EnableArmDapChain/EnableArmDapChain.ino) | Expresses the same DP/AP request sequence through `JtagChain` and prints the final target response. | Named `Dpacc` / `Apacc` instructions, 35-bit target requests and checked `transfer()` calls. |
-| [BoundaryScanCommands](BoundaryScanCommands/BoundaryScanCommands.ino) | Runs a boundary-scan demonstration once, after its teaching profile and vectors have been configured. | `sample()`, `preload()`, `samplePreload()`, `extest()`, `intest()`, `highZ()`, `bypass()` and `select()`. |
+| Example | What it does |
+| --- | --- |
+| [ReadIdChain](ReadIdChain/ReadIdChain.ino) | Reads the Debug TAP IDCODE once per second and prints it as a hexadecimal integer. |
+| [TransferChain](TransferChain/TransferChain.ino) | Reads IDCODE through a named instruction and prints the returned bytes, least significant byte first. |
+| [BypassChain](BypassChain/BypassChain.ino) | Selects BYPASS on the Debug TAP and the other TAP, once at startup. |
+| [EnableArmDapChain](EnableArmDapChain/EnableArmDapChain.ino) | Expresses the same DP/AP request sequence through `JtagChain` and prints the final target response. |
+| [BoundaryScanCommands](BoundaryScanCommands/BoundaryScanCommands.ino) | Runs a boundary-scan demonstration once, after its teaching profile and vectors have been configured. |
 
 ## Target configuration and output
 

@@ -225,9 +225,28 @@ To read IDCODE without creating request and response buffers:
 
 ```cpp
 uint32_t idcode = 0;
-JTAG::ERROR status = namedChain.readIdcode<ArmJtagDp>(1, idcode);
+auto debugPort = namedChain.device<ArmJtagDp>(1);
+JTAG::ERROR status = debugPort.readIdcode(idcode);
 if (status == JTAG::ERROR::NO) Serial.println(idcode, HEX);
 ```
+
+`device<Profile>(index)` returns a `JtagDeviceAccess<Profile, Chain>` holding
+only a reference to the chain and the index. The chain must outlive the access
+object. `debugPort.valid()` checks the index and declared profile without clocks;
+operations repeat those checks even if `valid()` was not called. Appending
+other devices preserves the binding, and access objects can be copied.
+`JtagDevice` remains a copied description; device operations live in the access
+object, while `JtagChain` handles whole-chain transfers.
+
+Named exchanges can also be issued through the access object:
+
+```cpp
+JTAG::ERROR status = debugPort.transfer(
+    ArmJtagDp::Instruction::Idcode, request, response);
+```
+
+Both `chain.transfer(index, command, ...)` and the raw `BitBuffer` overload
+remain available. `readIdcode()` is now a device-access method only.
 
 The helper uses the profile's `Instruction::Idcode`, requires a fixed 32-bit DR,
 sends zeros, and assembles the response in transmission order into `uint32_t`.
@@ -235,11 +254,76 @@ It leaves `idcode` unchanged on failure. The chain must have room for the 32
 IDCODE bits plus all BYPASS bits. It does not reset the chain or check the value
 against an expected device ID.
 
+### Standard device operations
+
+Complete sketches:
+
+- [BypassChain](examples/BypassChain/BypassChain.ino): BYPASS on the existing ARM
+  JTAG-DP profile, including the equivalent generic `select()` call.
+- [BoundaryScanCommands](examples/BoundaryScanCommands/BoundaryScanCommands.ino):
+  SAMPLE, PRELOAD, SAMPLE/PRELOAD, EXTEST, INTEST, HIGHZ, BYPASS and `select()`.
+  Its local `ExampleBoundaryProfile.hpp` contains **teaching values, not a real
+  device profile**. Replace the opcodes, IR/BSR lengths and vectors using your
+  device's BSDL and board connections, then set `DeviceConfigured = true`.
+  Until configured, the sketch prints a setup message and generates no JTAG clocks.
+  It runs once; operations are explicit, with status checks and captured output.
+
+
+`JtagDeviceAccess` also exposes these operations when the profile declares the
+corresponding enum members and encodings:
+
+| Method | Profile instruction | Exchange |
+| --- | --- | --- |
+| `bypass()` | `Bypass` | IR only |
+| `highZ()` | `HighZ` | IR only |
+| `sample(values, captured)` | `Sample` | IR + DR |
+| `preload(values)` | `Preload` | IR + DR, captured bits discarded |
+| `samplePreload(values, captured)` | `SamplePreload` | IR + DR |
+| `extest(values, captured)` | `Extest` | IR + DR |
+| `intest(values, captured)` | `Intest` | IR + DR |
+| `select(instruction)` | Any supported instruction | IR only |
+
+The data buffers contain the complete target register in transmission order.
+Fixed DR lengths are checked before clocks. For combined SAMPLE/PRELOAD,
+a profile can alias `Sample`, `Preload`, and `SamplePreload` to the same opcode.
+`sample()` takes explicit input values because a combined instruction also
+updates preload latches. It does not silently preload zeros.
+
+Before the first `extest()`, call `preload(initialValues)` with values appropriate
+for the device and board. EXTEST activates at Update-IR, before the method shifts
+its new DR data. A typical sequence for a boundary-scan profile is:
+
+```cpp
+// boundary is an access object for a device-specific boundary-scan profile.
+// initialValues and nextValues contain the full BSR, including control cells.
+auto status = boundary.preload(initialValues);
+if (status != JTAG::ERROR::NO) return;
+status = boundary.extest(nextValues, captured);
+if (status != JTAG::ERROR::NO) return;
+status = boundary.bypass();
+```
+
+Captured data precedes the Update-DR that applies the supplied values. INTEST
+also requires device-specific initialization and test clocks; the helper does
+not implement a core test algorithm. Instruction behavior is described in the
+[XJTAG instruction reference](https://docs.xjtag.com/xjtag/current/concepts/instructions.html).
+
+These methods use the current single-target chain policy: **every call selects
+BYPASS for all other devices**. HIGHZ/EXTEST/INTEST remain selected until another
+IR update or reset; accessing another device can end that mode. Coordinated
+boundary-scan testing of several active devices is not implemented.
+
+No generic boundary-scan opcode table is assumed. Define opcodes, BSR lengths
+and cell layouts from the device's documentation/BSDL. Calling a helper whose
+enum member is absent fails to compile; an enum rejected by `encode()` returns
+`INVALID_INSTRUCTION` without clocks. `ArmJtagDp` supports `bypass()` but is a
+debug-port profile, so boundary-scan instructions have not been added to it.
+
 To define another profile, provide a distinct `Instruction` enum, a constant
 `IrLength`, a static `encode(Instruction)` returning `BitBuffer<IrLength>`
 (empty for an unsupported command), and `drLength(Instruction)`. Return the
 fixed target DR width or zero to allow a caller-selected variable width.
-For `readIdcode<YourProfile>()`, expose `Instruction::Idcode` and make its
+For `device<YourProfile>(index).readIdcode()`, expose `Instruction::Idcode` and make its
 `drLength()` a constant expression equal to 32. Specialize
 `JtagInstructionProfile<YourProfile::Instruction>` by inheriting `YourProfile`.
 Use one distinct enum per profile. Devices store a profile identity pointer;
@@ -282,6 +366,11 @@ internal implementation detail, outside the supported application API.
 `JtagGpio` generates individual clocks and handles GPIO, timing, and sampling TDO. `Jtag::reset()` generates five TCK cycles with
 TMS high; the internal `JtagGpio::pulseTrst()` instead pulses the physical TRST
 pin low, then high, without generating clocks.
+
+GPIO tracing is disabled by default. To log each clock as three digits
+`TMS`, `TDI`, `TDO`, add `-DARDUJTAG_DEBUG` to the firmware environment's
+`build_flags`. Serial output slows the clock and should be used for diagnostics.
+TDO is sampled while TCK is high, before the target advances it on the falling edge.
 
 ## Development setup
 
@@ -438,6 +527,30 @@ The tests cover bit/byte packing, invalid inputs, DR transmission and reception,
 partial-byte padding, and output buffer bounds. They do not validate GPIO timing,
 TAP state transitions or communication with a physical chip. See
 [test/README](test/README) for details of the simulated bus.
+
+
+
+## Commands
+
+### Build
+
+```
+pio run -e nanoatmega328new
+```
+
+### Load
+
+```
+pio run -e nanoatmega328new -t upload
+```
+
+### Console Output
+
+```
+pio device monitor -b 115200
+
+pio run -e nanoatmega328new -t upload --upload-port COM5
+```
 
 ## Contributing
 

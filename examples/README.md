@@ -82,7 +82,3 @@ pio device monitor -b 115200
 ```
 
 To specify an upload port, append `--upload-port COM5` on Windows or the actual serial device path on your system. Close the serial monitor before uploading.
-See the main [README](../README.md#development-setup) for PlatformIO setup.
-
-GPIO tracing is off by default. With `-DARDUJTAG_DEBUG` in the firmware build flags, additional three-digit `TMS/TDI/TDO` lines appear for every clock and slow
-the transfer. They are diagnostic traces, not the decoded example output.

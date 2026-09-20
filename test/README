@@ -30,3 +30,13 @@ commands and mismatched profiles, including devices with equal IR lengths.
 
 DR width tests reject shorter and longer named requests before clocks. IDCODE
 tests check 32-bit assembly, BYPASS offsets and unchanged results on failure.
+
+Device access tests check live profile/index validation, copied access objects,
+and stable device indices when the chain grows. IDCODE tests use device access.
+
+Standard-operation tests use a synthetic boundary-scan profile (not real device
+opcodes), check IR-only modes, DR payloads/capture and validation before clocks.
+
+The test_gpio suite includes the real JtagGpio.cpp with simulated pins and time.
+It verifies TDO is sampled before the falling edge, preserves a complete IDCODE,
+and keeps serial tracing off by default. This does not measure hardware timing.

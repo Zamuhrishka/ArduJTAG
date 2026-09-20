@@ -7,7 +7,7 @@ with an Arduino acting as the JTAG controller connected to its JTAG pins.
 To use another target board, adapt the examples to its JTAG implementation. In particular, check the JTAG instruction opcodes,
 IR and DR lengths, the number and order of TAPs in the chain, and the target device index. Update device profiles
 or hard-coded bit sequences as appropriate. For DAP and boundary-scan operations, also review register values,
-memory addresses and scan vectors against the target documentation or BSDL file.
+memory addresses, and scan vectors against the target documentation or BSDL file.
 
 The tables below describe what each example does.
 
@@ -19,7 +19,7 @@ These examples construct whole-chain IR/DR buffers or explicit clock sequences a
 
 | Example | What it does |
 | --- | --- |
-| [ReadId](ReadId/ReadId.ino) | Sends a hard-coded 9-bit IR sequence (BoundaryScan TAP (5-bit IR) and Debug TAP (4-bit IR)), reads 32 DR bits (IDCODE) and prints the result as a hexadecimal integer. |
+| [ReadId](ReadId/ReadId.ino) | Sends a hard-coded 9-bit IR sequence (BoundaryScan TAP (5-bit IR) and Debug TAP (4-bit IR)), reads 32 DR bits (IDCODE), and prints the result as a hexadecimal integer. |
 | [ReadIdSequence](ReadIdSequence/ReadIdSequence.ino) | Sends an explicit 54-clock TMS/TDI sequence after reset and prints all captured TDO bytes. |
 | [EnableArmDap](EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data. |
 
@@ -37,12 +37,12 @@ These examples use `JtagChain` and, where applicable, `JtagDeviceAccess` to addr
 | [BoundaryScanCommands](BoundaryScanCommands/BoundaryScanCommands.ino) | Runs a boundary-scan demonstration once, after its teaching profile and vectors have been configured. |
 
 
-> **WARNONG: Boundary-scan template**
+> ** WARNING: Boundary-scan template**
 >
 > [ExampleBoundaryProfile.hpp](BoundaryScanCommands/ExampleBoundaryProfile.hpp) contains **teaching opcodes and lengths,
 not a profile for a real chip**. Before running `BoundaryScanCommands`:
 >
-> 1. Replace the profile with the supported instructions, IR length and boundary register length from your device's documentation/BSDL.
+> 1. Replace the profile with the supported instructions, IR length, and boundary register length from your device's documentation/BSDL.
 > 2. Replace `initialValues` and `nextValues` with complete BSR vectors, including output-enable/control cells, appropriate for the board connections.
 > 3. Remove operations unsupported by the device and supply any required INTEST initialization or test clocks.
 > 4. Check the chain capacity and set `DeviceConfigured = true`.
@@ -63,7 +63,7 @@ All sketches use Serial at **115200 baud** and these controller pins:
 
 Use a common ground and electrical levels compatible with both boards. `nTRST` is the JTAG reset signal, not the target's system `NRST`.
 
-PlatformIO builds `src/main.cpp`; merely opening an `.ino` does not select it. Replace the contents of `src/main.cpp` with one example include:
+PlatformIO builds `src/main.cpp`; merely opening an `.ino` does not select it. Replace the contents of `src/main.cpp` with the following example include:
 
 ```cpp
 #include <Arduino.h>

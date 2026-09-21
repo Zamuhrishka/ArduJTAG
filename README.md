@@ -219,11 +219,11 @@ BitBuffer<32> response;
 JTAG::ERROR status = chain.transfer(1, instruction, request, response);
 ```
 
-See [TransferChain](examples/TransferChain/TransferChain.ino) for a complete
+See [TransferChain](examples/chain/TransferChain/TransferChain.ino) for a complete
 `transfer()` sketch with error handling, response output, and a raw-instruction
 alternative.
 
-See [EnableArmDapChain](examples/EnableArmDapChain/EnableArmDapChain.ino) for
+See [EnableArmDapChain](examples/chain/EnableArmDapChain/EnableArmDapChain.ino) for
 the `EnableArmDap` register sequence expressed with named DPACC/APACC transfers.
 Its requests and responses contain 35 target bits; the chain adds the BYPASS bit.
 It preserves the original reset points; the final zero request also reloads
@@ -300,9 +300,9 @@ against an expected device ID.
 
 Complete sketches:
 
-- [BypassChain](examples/BypassChain/BypassChain.ino): BYPASS on the existing ARM
+- [BypassChain](examples/chain/BypassChain/BypassChain.ino): BYPASS on the existing ARM
   JTAG-DP profile, including the equivalent generic `select()` call.
-- [BoundaryScanCommands](examples/BoundaryScanCommands/BoundaryScanCommands.ino):
+- [BoundaryScanCommands](examples/chain/BoundaryScanCommands/BoundaryScanCommands.ino):
   SAMPLE, PRELOAD, SAMPLE/PRELOAD, EXTEST, INTEST, HIGHZ, BYPASS and `select()`.
   Its local `ExampleBoundaryProfile.hpp` contains **teaching values, not a real
   device profile**. Replace the opcodes, IR/BSR lengths and vectors using your
@@ -394,7 +394,7 @@ in Run-Test/Idle, do not reset between operations, and always reload IR.
 Device-specific commands, response pipelines and required idle clocks remain
 the caller's responsibility.
 
-See [ReadIdChain](examples/ReadIdChain/ReadIdChain.ino) for a complete sketch.
+See [ReadIdChain](examples/chain/ReadIdChain/ReadIdChain.ino) for a complete sketch.
 
 ## Internal implementation
 
@@ -542,7 +542,7 @@ with one sketch include, for example:
 
 ```cpp
 #include <Arduino.h>
-#include "../examples/ReadIdChain/ReadIdChain.ino"
+#include "../examples/chain/ReadIdChain/ReadIdChain.ino"
 ```
 
 Include only one sketch at a time because each defines `setup()` and `loop()`.

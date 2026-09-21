@@ -1,6 +1,4 @@
 /**
- * \file         JtagGpio.hpp
- * \author       Aliaksander Kavalchuk (aliaksander.kavalchuk@gmail.com)
  * \brief        This file contains the prototypes and definition for the JtagGpio class which manages the JTAG
  *               communication bus.
  */

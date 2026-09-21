@@ -13,15 +13,18 @@ The tables below describe what each example does.
 
 ## Available examples
 
+Examples are grouped by API: `direct/` uses `Jtag` directly, while `chain/` uses
+`JtagChain` and device access objects.
+
 ### Direct use of `Jtag`
 
 These examples construct whole-chain IR/DR buffers or explicit clock sequences and call `Jtag` directly.
 
 | Example | What it does |
 | --- | --- |
-| [ReadId](ReadId/ReadId.ino) | Sends a hard-coded 9-bit IR sequence (BoundaryScan TAP (5-bit IR) and Debug TAP (4-bit IR)), reads 32 DR bits (IDCODE), and prints the result as a hexadecimal integer. |
-| [ReadIdSequence](ReadIdSequence/ReadIdSequence.ino) | Sends an explicit 54-clock TMS/TDI sequence after reset and prints all captured TDO bytes. |
-| [EnableArmDap](EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data. |
+| [ReadId](direct/ReadId/ReadId.ino) | Sends a hard-coded 9-bit IR sequence (BoundaryScan TAP (5-bit IR) and Debug TAP (4-bit IR)), reads 32 DR bits (IDCODE), and prints the result as a hexadecimal integer. |
+| [ReadIdSequence](direct/ReadIdSequence/ReadIdSequence.ino) | Sends an explicit 54-clock TMS/TDI sequence after reset and prints all captured TDO bytes. |
+| [EnableArmDap](direct/EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data. |
 
 ### Using `JtagChain`
 
@@ -30,16 +33,16 @@ These examples use `JtagChain` and, where applicable, `JtagDeviceAccess` to addr
 
 | Example | What it does |
 | --- | --- |
-| [ReadIdChain](ReadIdChain/ReadIdChain.ino) | Reads the Debug TAP IDCODE once per second and prints it as a hexadecimal integer. |
-| [TransferChain](TransferChain/TransferChain.ino) | Reads IDCODE through a named instruction and prints the returned bytes, least significant byte first. |
-| [BypassChain](BypassChain/BypassChain.ino) | Selects BYPASS on the Debug TAP and the other TAP, once at startup. |
-| [EnableArmDapChain](EnableArmDapChain/EnableArmDapChain.ino) | Expresses the same DP/AP request sequence through `JtagChain` and prints the final target response. |
-| [BoundaryScanCommands](BoundaryScanCommands/BoundaryScanCommands.ino) | Runs a boundary-scan demonstration once, after its teaching profile and vectors have been configured. |
+| [ReadIdChain](chain/ReadIdChain/ReadIdChain.ino) | Reads the Debug TAP IDCODE once per second and prints it as a hexadecimal integer. |
+| [TransferChain](chain/TransferChain/TransferChain.ino) | Reads IDCODE through a named instruction and prints the returned bytes, least significant byte first. |
+| [BypassChain](chain/BypassChain/BypassChain.ino) | Selects BYPASS on the Debug TAP and the other TAP, once at startup. |
+| [EnableArmDapChain](chain/EnableArmDapChain/EnableArmDapChain.ino) | Expresses the same DP/AP request sequence through `JtagChain` and prints the final target response. |
+| [BoundaryScanCommands](chain/BoundaryScanCommands/BoundaryScanCommands.ino) | Runs a boundary-scan demonstration once, after its teaching profile and vectors have been configured. |
 
 
 > ** WARNING: Boundary-scan template**
 >
-> [ExampleBoundaryProfile.hpp](BoundaryScanCommands/ExampleBoundaryProfile.hpp) contains **teaching opcodes and lengths,
+> [ExampleBoundaryProfile.hpp](chain/BoundaryScanCommands/ExampleBoundaryProfile.hpp) contains **teaching opcodes and lengths,
 not a profile for a real chip**. Before running `BoundaryScanCommands`:
 >
 > 1. Replace the profile with the supported instructions, IR length, and boundary register length from your device's documentation/BSDL.
@@ -67,7 +70,7 @@ PlatformIO builds `src/main.cpp`; merely opening an `.ino` does not select it. R
 
 ```cpp
 #include <Arduino.h>
-#include "../examples/ReadIdChain/ReadIdChain.ino"
+#include "../examples/chain/ReadIdChain/ReadIdChain.ino"
 ```
 
 Change the path to select another sketch. Include only one example at a time, since each defines `setup()` and `loop()`. Keep helper headers next to their

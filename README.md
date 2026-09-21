@@ -296,6 +296,20 @@ It leaves `idcode` unchanged on failure. The chain must have room for the 32
 IDCODE bits plus all BYPASS bits. It does not reset the chain or check the value
 against an expected device ID.
 
+### STM32F4 LQFP100 BoundaryScan profile
+
+`Stm32F405_415_407_417Lqfp100` describes the five-bit BoundaryScan TAP from
+ST's BSDL V1.1: EXTEST, SAMPLE/PRELOAD, IDCODE and BYPASS, with a 406-bit boundary
+register. Its separate `Stm32F405_415_407_417Lqfp100Boundary` helper maps package
+ports to cells and builds an initial vector with output drivers disabled.
+Use `JtagChain<2, 407>` for this TAP plus the ARM Debug TAP in BYPASS.
+
+The BSDL requires NRST low; this is separate from JTRST and must be arranged
+externally. IDCODE matching ignores revision bits. See the
+[profile guide](include/profiles/README.md) for metadata, pin helpers and usage.
+The generic `BoundaryScanCommands` sketch remains a teaching example; INTEST
+and HIGHZ are not declared by this STM32 BSDL.
+
 ### Standard device operations
 
 Complete sketches:
@@ -418,7 +432,9 @@ include/
 │   ├── GpioPin.hpp
 │   └── JtagGpio.hpp
 └── profiles/
-    └── ArmJtagDp.hpp
+    ├── ArmJtagDp.hpp
+    ├── Stm32F405_415_407_417Lqfp100.hpp
+    └── Stm32F405_415_407_417Lqfp100Boundary.hpp
 src/
 └── main.cpp
 ```
@@ -569,7 +585,7 @@ Run the Unity tests on your computer:
 pio test -e native
 ```
 
-There are **47 tests in six modules**, each built as a separate executable:
+There are **54 tests in seven modules**, each built as a separate executable:
 
 | Module | What it checks |
 | --- | --- |
@@ -579,6 +595,7 @@ There are **47 tests in six modules**, each built as a separate executable:
 | `test_clock_cycles` | TMS/TDI sequences, TDO capture, sequence limits and reset. |
 | `test_chain` | Chain ordering, BYPASS, profiles, device access and standard operations. |
 | `test_gpio` | TDO sampling before the falling TCK edge in the real GPIO clock routine. |
+| `test_stm32_profile` | STM32 BSDL instruction codes, IDCODE matching, cell mapping and full 406-bit scans. |
 
 To run only IR tests:
 

@@ -13,6 +13,14 @@ No Arduino or target board is required.
 | [test_clock_cycles](test_clock_cycles/test_main.cpp) | Explicit TMS/TDI sequences, TDO capture, sequence limits and TAP reset clocks. |
 | [test_chain](test_chain/test_main.cpp) | Chain ordering, BYPASS padding, profiles, device access, IDCODE and standard device operations. |
 | [test_gpio](test_gpio/test_main.cpp) | Sampling TDO before the falling TCK edge in the real `JtagGpio::clock()` implementation. |
+| [test_stm32_profile](test_stm32_profile/test_main.cpp) | STM32 BSDL opcodes and widths, IDCODE masks, cell mappings, initial vectors, pin helpers and 406-bit scans with Debug TAP BYPASS. |
+
+The STM32 profile module has seven tests. It checks supported instruction aliases
+and rejects unlisted opcodes, verifies revision-independent IDCODE matching,
+checks unique cell/pin mappings and the disabled-driver starting vector, and
+exercises pin helper validation. Chain tests exchange the complete BSR with
+407-bit capacity, reject shorter/longer vectors and insufficient chain capacity
+before clocks, and read the BoundaryScan TAP IDCODE through device access.
 
 ## Running the tests
 

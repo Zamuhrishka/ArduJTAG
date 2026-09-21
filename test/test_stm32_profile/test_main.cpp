@@ -1,12 +1,14 @@
 #include "../support/SimulatedGpio.hpp"
 #include <chain/JtagChain.hpp>
+#include <boundary/BoundaryScan.hpp>
 #include <profiles/ArmJtagDp.hpp>
 #include <profiles/Stm32F405_415_407_417Lqfp100Boundary.hpp>
 #include <unity.h>
 #include <string.h>
 
 using Profile = Stm32F405_415_407_417Lqfp100;
-using Boundary = Stm32F405_415_407_417Lqfp100Boundary;
+using Layout = Stm32F405_415_407_417Lqfp100Boundary;
+using Boundary = BoundaryScan<Layout>;
 using Pin = Boundary::Pin;
 using Instruction = Profile::Instruction;
 
@@ -62,17 +64,17 @@ void test_identity_and_compliance_metadata()
 
 void test_cell_mapping_and_initial_vector()
 {
-  const auto pd12 = Boundary::cells(Pin::Pd12);
+  const auto pd12 = Layout::cells(Pin::Pd12);
   TEST_ASSERT_EQUAL_UINT16(166, pd12.input);
   TEST_ASSERT_EQUAL_UINT16(167, pd12.output);
   TEST_ASSERT_EQUAL_UINT16(168, pd12.control);
   TEST_ASSERT_EQUAL_UINT8(59, pd12.packagePin);
-  TEST_ASSERT_EQUAL_UINT16(405, Boundary::cells(Pin::Pe2).control);
-  TEST_ASSERT_EQUAL_UINT16(12, Boundary::cells(Pin::Pe1).input);
-  TEST_ASSERT_EQUAL_UINT16(24, Boundary::cells(Pin::Boot0).input);
-  TEST_ASSERT_EQUAL_UINT8(94, Boundary::cells(Pin::Boot0).packagePin);
-  TEST_ASSERT_FALSE(Boundary::cells(Pin::Boot0).hasOutput());
-  TEST_ASSERT_FALSE(Boundary::cells(Pin::Count).valid());
+  TEST_ASSERT_EQUAL_UINT16(405, Layout::cells(Pin::Pe2).control);
+  TEST_ASSERT_EQUAL_UINT16(12, Layout::cells(Pin::Pe1).input);
+  TEST_ASSERT_EQUAL_UINT16(24, Layout::cells(Pin::Boot0).input);
+  TEST_ASSERT_EQUAL_UINT8(94, Layout::cells(Pin::Boot0).packagePin);
+  TEST_ASSERT_FALSE(Layout::cells(Pin::Boot0).hasOutput());
+  TEST_ASSERT_FALSE(Layout::cells(Pin::Count).valid());
 
   bool usedCells[406] = {}, usedPins[101] = {};
   auto values = Boundary::initialValues();
@@ -80,7 +82,7 @@ void test_cell_mapping_and_initial_vector()
   TEST_ASSERT_EQUAL_UINT32(78, static_cast<uint8_t>(Pin::Count));
   size_t outputs = 0, ones = 0;
   for (uint8_t i = 0; i < static_cast<uint8_t>(Pin::Count); ++i) {
-    const auto cell = Boundary::cells(static_cast<Pin>(i));
+    const auto cell = Layout::cells(static_cast<Pin>(i));
     TEST_ASSERT_TRUE(cell.valid());
     TEST_ASSERT_TRUE(cell.input < 406);
     TEST_ASSERT_FALSE(usedCells[cell.input]);

@@ -39,20 +39,24 @@ boundary-scan behavior, as noted in the source BSDL.
 ## LQFP100 boundary cells
 
 [Stm32F405_415_407_417Lqfp100Boundary](Stm32F405_415_407_417Lqfp100Boundary.hpp)
-keeps the package-specific cell mapping separate from the instruction profile.
+contains only package-specific metadata, separate from the instruction profile.
+[BoundaryScan<Layout>](../boundary/BoundaryScan.hpp) implements the buffer operations;
+[BoundaryTypes.hpp](../boundary/BoundaryTypes.hpp) defines the shared cell description.
 It describes 77 bidirectional ports and the input-only BOOT0 port. Internal
 cells remain present in the complete 406-bit vector.
 
-- `cells(Pin)` returns input, output and control indices plus the physical
+- `Layout::cells(Pin)` returns input, output and control indices plus the physical
   LQFP100 pin number. These are not Discovery header numbers. `NoCell` marks
-  missing cells; an unknown pin returns an invalid mapping.
-- `initialValues()` returns a 406-bit buffer with every output control set to
+  missing cells; an unknown pin returns an invalid mapping. `disableValue`
+  specifies the output control polarity. `Layout::initialValue(index)` describes
+  the initial value of each cell, including internal cells and choices for X.
+- `Boundary::initialValues()` returns a 406-bit buffer with every output control set to
   1 (driver disabled), internal cells set to 0, and BSDL X values chosen as 0.
   This starting vector must be considered together with the board circuit.
-- `setOutput(values, pin, level)` sets the output data and clears the control
+- `Boundary::setOutput(values, pin, level)` sets the output data and clears the control
   bit to enable the driver.
-- `disableOutput(values, pin)` sets the control bit to 1 without changing data.
-- `readInput(captured, pin, level)` reads the pin's input cell.
+- `Boundary::disableOutput(values, pin)` sets the control bit to 1 without changing data.
+- `Boundary::readInput(captured, pin, level)` reads the pin's input cell.
 
 The helpers require an active buffer length of exactly 406 bits. Invalid pins,
 wrong lengths and output requests for BOOT0 return false without modifying the
@@ -67,11 +71,13 @@ including the latter's BYPASS bit.
 
 ```cpp
 #include <chain/JtagChain.hpp>
+#include <boundary/BoundaryScan.hpp>
 #include <profiles/ArmJtagDp.hpp>
 #include <profiles/Stm32F405_415_407_417Lqfp100Boundary.hpp>
 
 using Profile = Stm32F405_415_407_417Lqfp100;
-using Boundary = Stm32F405_415_407_417Lqfp100Boundary;
+using Layout = Stm32F405_415_407_417Lqfp100Boundary;
+using Boundary = BoundaryScan<Layout>;
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, JTRST; NRST is separate.
 JtagChain<2, 407> chain(jtag);
@@ -102,3 +108,25 @@ This example uses SAMPLE and does not enter EXTEST. For output testing, review
 all connected signals, preload suitable initial values before selecting EXTEST,
 and remember that captures precede application of the newly shifted values.
 The supplied profile has been checked with host simulations, not physical hardware.
+
+## Defining another boundary layout
+
+A layout supplies `BoundaryLength`, an enum `Pin`,
+`static BoundaryTypes::Cells cells(Pin)` and `static bool initialValue(size_t)`.
+The generic engine does not require a TAP profile or a contiguous pin enum.
+`initialValue()` must describe every bit in the register, including internal
+cells and concrete choices for don't-care values. A cell description contains
+input/output/control indices, the package pin number and the driver's
+`disableValue`. Use `BoundaryTypes::NoCell` for absent cells.
+
+`BoundaryScan` enables a driver with the inverse of `disableValue`. It supports
+input-only pins and controlled outputs with or without an input cell; it does
+not infer output polarity or BSDL safe values from the STM32 layout. Uncontrolled
+outputs and more complex driver encodings are outside this API. If outputs share
+a control cell, enabling or disabling that control affects all of them.
+
+The generic engine validates required cell indices before modifying buffers.
+It leaves TAP state, PRELOAD/EXTEST sequencing and actual communication to
+`JtagDeviceAccess`. Existing code using the STM32 layout's buffer helpers should
+switch its `Boundary` alias to `BoundaryScan<Layout>`; mapping queries remain on
+`Layout::cells()`.

@@ -23,6 +23,7 @@ The project is grew out of the [Diving into JTAG protocol](https://medium.com/@a
 | Class | Purpose |
 | --- | --- |
 | `BitBuffer<Capacity>` | Stores packed bits and their active length. |
+| `BoundaryScan<Layout>` | Builds and edits boundary vectors using device-specific cell metadata. |
 | `Jtag` | Performs whole-chain IR/DR scans, explicit clock sequences and TAP reset. |
 | `JtagDevice` | Describes a device's IR length and optional instruction profile. |
 | `JtagChain<MaxDevices, Capacity>` | Addresses a target by index and puts other devices in BYPASS. |
@@ -300,8 +301,9 @@ against an expected device ID.
 
 `Stm32F405_415_407_417Lqfp100` describes the five-bit BoundaryScan TAP from
 ST's BSDL V1.1: EXTEST, SAMPLE/PRELOAD, IDCODE and BYPASS, with a 406-bit boundary
-register. Its separate `Stm32F405_415_407_417Lqfp100Boundary` helper maps package
-ports to cells and builds an initial vector with output drivers disabled.
+register. Its separate `Stm32F405_415_407_417Lqfp100Boundary` layout describes
+package cells and initial values. `BoundaryScan<Layout>` uses this metadata to
+build vectors, control outputs and read captured inputs.
 Use `JtagChain<2, 407>` for this TAP plus the ARM Debug TAP in BYPASS.
 
 The BSDL requires NRST low; this is separate from JTRST and must be arranged
@@ -417,6 +419,9 @@ for example `<core/Jtag.hpp>` or `<chain/JtagChain.hpp>`.
 
 ```text
 include/
+├── boundary/
+│   ├── BoundaryScan.hpp
+│   └── BoundaryTypes.hpp
 ├── buffers/
 │   └── BitBuffer.hpp
 ├── core/
@@ -585,7 +590,7 @@ Run the Unity tests on your computer:
 pio test -e native
 ```
 
-There are **54 tests in seven modules**, each built as a separate executable:
+There are **59 tests in eight modules**, each built as a separate executable:
 
 | Module | What it checks |
 | --- | --- |
@@ -595,6 +600,7 @@ There are **54 tests in seven modules**, each built as a separate executable:
 | `test_clock_cycles` | TMS/TDI sequences, TDO capture, sequence limits and reset. |
 | `test_chain` | Chain ordering, BYPASS, profiles, device access and standard operations. |
 | `test_gpio` | TDO sampling before the falling TCK edge in the real GPIO clock routine. |
+| `test_boundary` | Generic vector operations, driver polarities and invalid layout/buffer handling. |
 | `test_stm32_profile` | STM32 BSDL instruction codes, IDCODE matching, cell mapping and full 406-bit scans. |
 
 To run only IR tests:

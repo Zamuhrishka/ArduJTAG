@@ -9,7 +9,7 @@
 
 //_____ I N C L U D E S _______________________________________________________
 #include <BitBuffer.hpp>
-#include <JtagGpio.hpp>
+#include <gpio/JtagGpio.hpp>
 #include <JtagCommon.hpp>
 #include <Arduino.h>
 //_____ C O N F I G S  ________________________________________________________
@@ -202,15 +202,16 @@ public:
 private:
   static constexpr uint8_t RESET_TMS_LEN = 5;
 
-  static constexpr uint8_t IR_TMS_PRE = 6;
-  static constexpr uint8_t IR_TMS_POST = 1;
-  static constexpr uint8_t IR_TMS_PRE_LEN = 5;
-  static constexpr uint8_t IR_TMS_POST_LEN = 2;
 
-  static constexpr uint8_t DR_TMS_PRE = 1;
-  static constexpr uint8_t DR_TMS_POST = 1;
-  static constexpr uint8_t DR_TMS_PRE_LEN = 3;
-  static constexpr uint8_t DR_TMS_POST_LEN = 2;
+  static constexpr uint8_t IR_TMS_PRE = 6;  ///< 0b00110, the TMS sequence to enter Shift-IR from Run-Test/Idle.
+  static constexpr uint8_t IR_TMS_POST = 1;  ///< 0b00001, the TMS sequence to return to Run-Test/Idle from Shift-IR.
+  static constexpr uint8_t IR_TMS_PRE_LEN = 5;  ///< Length of the IR_TMS_PRE sequence in bits.
+  static constexpr uint8_t IR_TMS_POST_LEN = 2;  ///< Length of the IR_TMS_POST sequence in bits.
+
+  static constexpr uint8_t DR_TMS_PRE = 1;  ///< 0b00001, the TMS sequence to enter Shift-DR from Run-Test/Idle.
+  static constexpr uint8_t DR_TMS_POST = 1;  ///< 0b00001, the TMS sequence to return to Run-Test/Idle from Shift-DR.
+  static constexpr uint8_t DR_TMS_PRE_LEN = 3;  ///< Length of the DR_TMS_PRE sequence in bits.
+  static constexpr uint8_t DR_TMS_POST_LEN = 2;  ///< Length of the DR_TMS_POST sequence in bits.
 
   JtagGpio bus;
 };

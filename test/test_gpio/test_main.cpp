@@ -1,10 +1,10 @@
 #include <Arduino.h>
-#include <JtagGpio.hpp>
+#include <gpio/JtagGpio.hpp>
 #include <unity.h>
 
 // Native suites normally replace JtagGpio. This suite compiles its real
 // implementation to test the ordering of pin operations inside clock().
-#include "../../src/JtagGpio.cpp"
+#include "../../src/gpio/JtagGpio.cpp"
 
 static const uint8_t TMS_PIN = 1, TDI_PIN = 2, TDO_PIN = 3, TCK_PIN = 4;
 static uint8_t levels[6];

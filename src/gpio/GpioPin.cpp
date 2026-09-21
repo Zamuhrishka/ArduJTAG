@@ -6,7 +6,7 @@
  */
 
 //_____ I N C L U D E S _______________________________________________________
-#include "GpioPin.hpp"
+#include <gpio/GpioPin.hpp>
 
 #include <Arduino.h>
 

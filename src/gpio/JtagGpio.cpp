@@ -6,7 +6,7 @@
  */
 
 //_____ I N C L U D E S _______________________________________________________
-#include "JtagGpio.hpp"
+#include <gpio/JtagGpio.hpp>
 
 #include <Arduino.h>
 

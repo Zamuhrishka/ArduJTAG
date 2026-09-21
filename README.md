@@ -7,7 +7,7 @@ It provides direct IR/DR scans and explicit clock sequences, along with a chain
 API for addressing individual devices using named instruction profiles.
 Buffers and chain storage have fixed capacities and do not require heap allocation.
 
-The project is grew out of the [Diving into JTAG protocol](https://medium.com/@aliaksandr.kavalchuk/diving-into-jtag-protocol-part-1-overview-fbdc428d3a16) article.
+The project is grew out of the [Diving into JTAG protocol](https://medium.com/@aliaksandr.kavalchuk/diving-into-jtag-protocol-part-1-overview-fbdc428d3a16) article series.
 
 ## Features
 
@@ -15,8 +15,6 @@ The project is grew out of the [Diving into JTAG protocol](https://medium.com/@a
 - Direct IR/DR transfers, TAP reset and explicit TMS/TDI clock sequences.
 - Device chains with automatic BYPASS padding and target response extraction.
 - Named instruction profiles with validation of device identity and DR lengths.
-- A four-bit ARM JTAG-DP profile and a `readIdcode()` helper.
-- Standard boundary-scan helpers for device-specific profiles.
 - Configurable JTAG clock speed and optional per-clock serial tracing.
 - Host tests for buffers, protocol sequences, chain operations and GPIO sampling.
 
@@ -24,7 +22,7 @@ The project is grew out of the [Diving into JTAG protocol](https://medium.com/@a
 
 | Class | Purpose |
 | --- | --- |
-| `BitBuffer<Capacity>` | Stores packed bits and their active length; capacity is in bits. |
+| `BitBuffer<Capacity>` | Stores packed bits and their active length. |
 | `Jtag` | Performs whole-chain IR/DR scans, explicit clock sequences and TAP reset. |
 | `JtagDevice` | Describes a device's IR length and optional instruction profile. |
 | `JtagChain<MaxDevices, Capacity>` | Addresses a target by index and puts other devices in BYPASS. |
@@ -122,8 +120,7 @@ JTAG::ERROR status = jtag.ir(instruction);
 
 The buffer length determines the number of instruction bits. Bytes are sent in
 array order, least significant bit first, and the operation finishes in
-Run-Test/Idle. An empty buffer returns `INVALID_BUFFER` without generating clocks.
-The operation returns `JTAG::ERROR::NO` on success.
+Run-Test/Idle.
 
 ### Write into DR register
 
@@ -401,10 +398,35 @@ See [ReadIdChain](examples/ReadIdChain/ReadIdChain.ino) for a complete sketch.
 
 ## Internal implementation
 
+Public API headers remain in `include/`, device profiles in `include/profiles/`,
+and the GPIO backend in `include/gpio/` and `src/gpio/`:
+
+```text
+include/
+├── BitBuffer.hpp
+├── Jtag.hpp
+├── JtagChain.hpp
+├── JtagCommon.hpp
+├── JtagDevice.hpp
+├── JtagDeviceAccess.hpp
+├── JtagProfile.hpp
+├── gpio/
+│   ├── GpioPin.hpp
+│   └── JtagGpio.hpp
+└── profiles/
+    └── ArmJtagDp.hpp
+src/
+├── JtagCommon.cpp
+├── main.cpp
+└── gpio/
+    ├── GpioPin.cpp
+    └── JtagGpio.cpp
+```
+
 Applications use `Jtag` from `Jtag.hpp` and `BitBuffer` for packed bit sequences.
 `Jtag` is implemented entirely in its header; `JtagGpio` and `GpioPin` retain
 separate implementation files.
-`Jtag` owns a concrete `JtagGpio`, declared in `include/JtagGpio.hpp`, as an
+`Jtag` owns a concrete `JtagGpio`, declared in `include/gpio/JtagGpio.hpp`, as an
 internal implementation detail, outside the supported application API.
 
 `Jtag` validates buffers, processes bit sequences, and handles TAP transitions.

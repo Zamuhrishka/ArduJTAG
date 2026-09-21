@@ -109,6 +109,9 @@ all connected signals, preload suitable initial values before selecting EXTEST,
 and remember that captures precede application of the newly shifted values.
 The supplied profile has been checked with host simulations, not physical hardware.
 
+For a complete sketch with Serial output and optional PRELOAD/EXTEST output
+control, see [BoundaryScanPins](../../examples/chain/BoundaryScanPins/BoundaryScanPins.ino).
+
 ## Defining another boundary layout
 
 A layout supplies `BoundaryLength`, an enum `Pin`,

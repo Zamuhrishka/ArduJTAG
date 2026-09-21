@@ -38,6 +38,7 @@ These examples use `JtagChain` and, where applicable, `JtagDeviceAccess` to addr
 | [BypassChain](chain/BypassChain/BypassChain.ino) | Selects BYPASS on the Debug TAP and the other TAP, once at startup. |
 | [EnableArmDapChain](chain/EnableArmDapChain/EnableArmDapChain.ino) | Expresses the same DP/AP request sequence through `JtagChain` and prints the final target response. |
 | [BoundaryScanCommands](chain/BoundaryScanCommands/BoundaryScanCommands.ino) | Runs a boundary-scan demonstration once, after its teaching profile and vectors have been configured. |
+| [BoundaryScanPins](chain/BoundaryScanPins/BoundaryScanPins.ino) | Uses `BoundaryScan<Layout>` to prepare STM32F4 vectors by pin name and read PD12 with SAMPLE. Optional EXTEST drives PD12 HIGH, captures its level, then disables the driver. |
 
 
 > ** WARNING: Boundary-scan template**
@@ -50,6 +51,25 @@ not a profile for a real chip**. Before running `BoundaryScanCommands`:
 > 3. Remove operations unsupported by the device and supply any required INTEST initialization or test clocks.
 > 4. Check the chain capacity and set `DeviceConfigured = true`.
 
+
+## BoundaryScanPins configuration
+
+This example uses the real STM32F405/415/407/417 LQFP100 profile and runs once.
+Hold the target's **NRST low externally** before running it, as required by the
+BSDL. D6 controls JTRST, a separate signal. The sketch checks the Boundary TAP's
+IDCODE, prints the PD12 cell indices (166/167/168), samples its input and finishes
+in BYPASS. It uses `JtagChain<2, 407>` for the BSR plus the Debug TAP BYPASS bit.
+
+`EnableOutputTest` is false by default. Set it to true after checking the board
+connections and the complete starting vector to demonstrate `setOutput()` and
+`disableOutput()`. The optional sequence preloads the disabled-driver vector,
+drives PD12 HIGH in EXTEST for one second, captures its level with a second scan,
+and applies the disabled-driver vector before leaving EXTEST. Other output
+drivers are disabled during EXTEST; this affects more than PD12. BYPASS restores
+normal target pin control, so the final vector does not force pin levels afterward.
+
+`BoundaryScan` helpers only edit or decode buffers; the `tap` methods send them.
+See the [profile guide](../include/profiles/README.md) for the layout and API.
 
 ## Run an example with PlatformIO
 

@@ -53,12 +53,12 @@ Named commands also require their profile header, such as
 
 ## Examples
 
-The [example guide](examples/README.md) describes all eight sketches, their output,
+The [example guide](examples/README.md) describes all nine sketches, their output,
 target configuration and how to select and upload them:
 
 - **Direct `Jtag`:** ReadId, ReadIdSequence and EnableArmDap.
 - **`JtagChain`:** ReadIdChain, TransferChain, BypassChain, EnableArmDapChain and
-  BoundaryScanCommands.
+  BoundaryScanCommands and BoundaryScanPins.
 
 Start with **ReadIdChain** to read the Debug TAP IDCODE, then **TransferChain**
 to work with request and response buffers explicitly. For another target board,
@@ -309,6 +309,10 @@ Use `JtagChain<2, 407>` for this TAP plus the ARM Debug TAP in BYPASS.
 The BSDL requires NRST low; this is separate from JTRST and must be arranged
 externally. IDCODE matching ignores revision bits. See the
 [profile guide](include/profiles/README.md) for metadata, pin helpers and usage.
+See [BoundaryScanPins](examples/chain/BoundaryScanPins/BoundaryScanPins.ino) for a
+complete sketch using `BoundaryScan<Layout>` with PD12. SAMPLE is enabled by
+default; output testing through EXTEST is explicitly enabled in the sketch.
+
 The generic `BoundaryScanCommands` sketch remains a teaching example; INTEST
 and HIGHZ are not declared by this STM32 BSDL.
 

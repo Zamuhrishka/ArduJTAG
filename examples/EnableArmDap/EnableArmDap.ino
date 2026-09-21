@@ -5,7 +5,7 @@
 
 #include <Arduino.h>
 
-#include "Jtag.hpp"
+#include <core/Jtag.hpp>
 
 // Define the pin numbers for JTAG interface
 #define TCK 2  // Test Clock

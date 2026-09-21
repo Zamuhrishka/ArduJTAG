@@ -1,4 +1,4 @@
-#include <JtagChain.hpp>
+#include <chain/JtagChain.hpp>
 #include <profiles/ArmJtagDp.hpp>
 #include <unity.h>
 #include <string.h>

@@ -6,7 +6,7 @@
  */
 
 //_____ I N C L U D E S _______________________________________________________
-#include "JtagCommon.hpp"
+#include <core/JtagCommon.hpp>
 
 #include <assert.h>
 //_____ C O N F I G S  ________________________________________________________

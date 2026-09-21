@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Jtag.hpp>
-#include <JtagDevice.hpp>
-#include <JtagDeviceAccess.hpp>
+#include <core/Jtag.hpp>
+#include <chain/JtagDevice.hpp>
+#include <chain/JtagDeviceAccess.hpp>
 
 /**
  * @brief Fixed-capacity chain, with devices added in physical TDI-to-TDO order.

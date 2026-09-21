@@ -8,7 +8,7 @@
 #pragma once
 
 //_____ I N C L U D E S _______________________________________________________
-#include <JtagCommon.hpp>
+#include <core/JtagCommon.hpp>
 #include <gpio/GpioPin.hpp>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________

@@ -45,7 +45,7 @@ lib_deps =
     https://github.com/Zamuhrishka/ArduJTAG.git
 ```
 
-Include `Jtag.hpp` for direct operations or `JtagChain.hpp` for the chain API.
+Include `core/Jtag.hpp` for direct operations or `chain/JtagChain.hpp` for the chain API.
 Named commands also require their profile header, such as
 `profiles/ArmJtagDp.hpp`. To build this repository itself, follow
 [Development setup](#development-setup) and [Build firmware](#build-firmware).
@@ -81,7 +81,7 @@ you to pack the entire chain.
 The snippets below assume this controller configuration:
 
 ```cpp
-#include <Jtag.hpp>
+#include <core/Jtag.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, nTRST
 ```
@@ -126,7 +126,7 @@ Run-Test/Idle.
 
 `BitBuffer<Capacity>` stores packed bytes and an exact bit count without heap
 allocation. Capacity is in bits (256 by default; supported range 1..32767).
-Include `Jtag.hpp` to use it.
+Include `core/Jtag.hpp` to use it.
 
 ```cpp
 // The leftmost character is the FIRST bit transmitted on TDI.
@@ -199,13 +199,13 @@ See the [example guide](examples/README.md) for complete sketches and wiring.
 
 ## Working with a device chain
 
-Include `JtagChain.hpp` to address one device while putting the others in
+Include `chain/JtagChain.hpp` to address one device while putting the others in
 BYPASS. `JtagDevice` stores the IR length; `JtagChain<MaxDevices, Capacity>`
 copies descriptions in physical **TDI-to-TDO order**. Targets are zero-based
 indices in that order. There is no automatic discovery.
 
 ```cpp
-#include <JtagChain.hpp>
+#include <chain/JtagChain.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, TRST
 JtagChain<2, 40> chain(jtag);
@@ -398,32 +398,40 @@ See [ReadIdChain](examples/ReadIdChain/ReadIdChain.ino) for a complete sketch.
 
 ## Internal implementation
 
-Public API headers remain in `include/`, device profiles in `include/profiles/`,
-and the GPIO backend in `include/gpio/` and `src/gpio/`:
+Headers are grouped by responsibility. Include them using their directory paths,
+for example `<core/Jtag.hpp>` or `<chain/JtagChain.hpp>`.
 
 ```text
 include/
-├── BitBuffer.hpp
-├── Jtag.hpp
-├── JtagChain.hpp
-├── JtagCommon.hpp
-├── JtagDevice.hpp
-├── JtagDeviceAccess.hpp
-├── JtagProfile.hpp
+├── buffers/
+│   └── BitBuffer.hpp
+├── core/
+│   ├── Jtag.hpp
+│   └── JtagCommon.hpp
+├── chain/
+│   ├── JtagChain.hpp
+│   ├── JtagDevice.hpp
+│   ├── JtagDeviceAccess.hpp
+│   └── JtagProfile.hpp
 ├── gpio/
 │   ├── GpioPin.hpp
 │   └── JtagGpio.hpp
 └── profiles/
     └── ArmJtagDp.hpp
 src/
-├── JtagCommon.cpp
 ├── main.cpp
+├── core/
+│   └── JtagCommon.cpp
 └── gpio/
     ├── GpioPin.cpp
     └── JtagGpio.cpp
 ```
 
-Applications use `Jtag` from `Jtag.hpp` and `BitBuffer` for packed bit sequences.
+`chain/JtagProfile.hpp` defines the profile mechanism; `profiles/` holds concrete
+device profiles. Only components with implementation files have directories in
+`src/`; buffers and chain classes are implemented in their headers.
+
+Applications use `Jtag` from `core/Jtag.hpp` and `BitBuffer` for packed bit sequences.
 `Jtag` is implemented entirely in its header; `JtagGpio` and `GpioPin` retain
 separate implementation files.
 `Jtag` owns a concrete `JtagGpio`, declared in `include/gpio/JtagGpio.hpp`, as an

@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "Jtag.hpp"
+#include <core/Jtag.hpp>
 #include <unity.h>
 
 // Stubs required by the JTAG sources linked into native test modules.

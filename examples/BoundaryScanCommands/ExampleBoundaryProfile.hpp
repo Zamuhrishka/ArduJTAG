@@ -1,7 +1,7 @@
 #pragma once
 
-#include <BitBuffer.hpp>
-#include <JtagProfile.hpp>
+#include <buffers/BitBuffer.hpp>
+#include <chain/JtagProfile.hpp>
 
 // Teaching profile only: these values do NOT describe a particular device.
 // Replace IR/BSR lengths, supported instructions and encodings using its BSDL.

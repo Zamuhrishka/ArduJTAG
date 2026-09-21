@@ -8,9 +8,9 @@
 #pragma once
 
 //_____ I N C L U D E S _______________________________________________________
-#include <BitBuffer.hpp>
+#include <buffers/BitBuffer.hpp>
 #include <gpio/JtagGpio.hpp>
-#include <JtagCommon.hpp>
+#include <core/JtagCommon.hpp>
 #include <Arduino.h>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________

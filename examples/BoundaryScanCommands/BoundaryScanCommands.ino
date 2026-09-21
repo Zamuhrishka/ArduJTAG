@@ -1,5 +1,5 @@
 // ArduJTAG standard boundary-scan operations on a single target.
-#include <JtagChain.hpp>
+#include <chain/JtagChain.hpp>
 #include "ExampleBoundaryProfile.hpp"
 
 // Set true after replacing the teaching profile and vectors for your device.

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <BitBuffer.hpp>
-#include <JtagProfile.hpp>
+#include <buffers/BitBuffer.hpp>
+#include <chain/JtagProfile.hpp>
 
 /** @brief Description of a device whose all-ones IR instruction selects BYPASS. */
 class JtagDevice

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <BitBuffer.hpp>
-#include <JtagCommon.hpp>
+#include <buffers/BitBuffer.hpp>
+#include <core/JtagCommon.hpp>
 
 /**
  * @brief Non-owning access to one device through its instruction profile.

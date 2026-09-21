@@ -12,7 +12,8 @@
 
 #include <assert.h>
 
-#include <core/JtagCommon.hpp>
+#include <core/JtagError.hpp>
+#include <core/JtagTypes.hpp>
 
 //_____ C O N F I G S  ________________________________________________________
 // Define ARDUJTAG_DEBUG to print TMS/TDI/TDO for each clock.

@@ -9,8 +9,10 @@
 
 //_____ I N C L U D E S _______________________________________________________
 #include <buffers/BitBuffer.hpp>
+#include <buffers/BitUtils.hpp>
 #include <gpio/JtagGpio.hpp>
-#include <core/JtagCommon.hpp>
+#include <core/JtagError.hpp>
+#include <core/JtagTypes.hpp>
 #include <Arduino.h>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________
@@ -66,7 +68,7 @@ public:
     /* Goto `Shift-IR` state */
     for (uint16_t i_seq = 0; i_seq < IR_TMS_PRE_LEN; i_seq++)
     {
-      bus.clock(JTAG::getBitArray(i_seq, &tms_pre[0]), JTAG::getBitArray(i_seq, &tdi_pre[0]));
+      bus.clock(BitUtils::getBit(i_seq, &tms_pre[0]), BitUtils::getBit(i_seq, &tdi_pre[0]));
     }
 
     uint16_t length = instruction.bitCount();
@@ -83,7 +85,7 @@ public:
     /* Goto `Run-Test/Idle` state */
     for (uint16_t i_seq = 0; i_seq < IR_TMS_POST_LEN; i_seq++)
     {
-      bus.clock(JTAG::getBitArray(i_seq, &tms_post[0]), JTAG::getBitArray(i_seq, &tdi_post[0]));
+      bus.clock(BitUtils::getBit(i_seq, &tms_post[0]), BitUtils::getBit(i_seq, &tdi_post[0]));
     }
 
     return JTAG::ERROR::NO;

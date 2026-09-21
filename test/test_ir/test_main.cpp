@@ -1,3 +1,4 @@
+#include <buffers/BitUtils.hpp>
 #include <Arduino.h>
 #include <core/Jtag.hpp>
 #include <unity.h>
@@ -15,8 +16,8 @@ uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
 {
   const size_t tick = clocks++;
   TEST_ASSERT_TRUE(tick < sizeof(clockTms) * 8);
-  JTAG::setBitArray(tick, clockTms, tms);
-  JTAG::setBitArray(tick, clockTdi, tdi);
+  BitUtils::set(tick, clockTms, tms);
+  BitUtils::set(tick, clockTdi, tdi);
   return 0;
 }
 
@@ -38,17 +39,17 @@ static void check_ir_trace(const BitBuffer<32767> &input)
   // Enter Shift-IR with 0,1,1,0,0; exit with the final data bit, then 1,0.
   const uint8_t pre[] = {0, 1, 1, 0, 0};
   for (size_t i = 0; i < sizeof(pre); ++i) {
-    TEST_ASSERT_EQUAL_INT(pre[i], JTAG::getBitArray(i, clockTms));
-    TEST_ASSERT_EQUAL_INT(0, JTAG::getBitArray(i, clockTdi));
+    TEST_ASSERT_EQUAL_INT(pre[i], BitUtils::getBit(i, clockTms));
+    TEST_ASSERT_EQUAL_INT(0, BitUtils::getBit(i, clockTdi));
   }
   for (size_t i = 0; i < count; ++i) {
-    TEST_ASSERT_EQUAL_INT(input.getBit(i), JTAG::getBitArray(i + 5, clockTdi));
-    TEST_ASSERT_EQUAL_INT(i == count - 1, JTAG::getBitArray(i + 5, clockTms));
+    TEST_ASSERT_EQUAL_INT(input.getBit(i), BitUtils::getBit(i + 5, clockTdi));
+    TEST_ASSERT_EQUAL_INT(i == count - 1, BitUtils::getBit(i + 5, clockTms));
   }
-  TEST_ASSERT_EQUAL_INT(1, JTAG::getBitArray(count + 5, clockTms));
-  TEST_ASSERT_EQUAL_INT(0, JTAG::getBitArray(count + 6, clockTms));
-  TEST_ASSERT_EQUAL_INT(0, JTAG::getBitArray(count + 5, clockTdi));
-  TEST_ASSERT_EQUAL_INT(0, JTAG::getBitArray(count + 6, clockTdi));
+  TEST_ASSERT_EQUAL_INT(1, BitUtils::getBit(count + 5, clockTms));
+  TEST_ASSERT_EQUAL_INT(0, BitUtils::getBit(count + 6, clockTms));
+  TEST_ASSERT_EQUAL_INT(0, BitUtils::getBit(count + 5, clockTdi));
+  TEST_ASSERT_EQUAL_INT(0, BitUtils::getBit(count + 6, clockTdi));
 }
 
 static void check_ir_buffer(size_t count)

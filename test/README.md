@@ -42,7 +42,7 @@ See [platformio.ini](../platformio.ini) for the environment configuration.
 
 ## Test setup and limits
 
-The protocol tests use the real header implementations and `src/core/JtagCommon.cpp`, with simulated `JtagGpio`/`GpioPin`
+The protocol tests use the real header implementations, including header-only `buffers/BitUtils.hpp`, with simulated `JtagGpio`/`GpioPin`
 implementations and a minimal [support/Arduino.h](support/Arduino.h). Simulated traces and counters are reset before
 each test. `test_gpio` instead exercises the real GPIO clock routine, while keeping pin access and time simulated.
 

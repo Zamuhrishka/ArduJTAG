@@ -404,10 +404,12 @@ for example `<core/Jtag.hpp>` or `<chain/JtagChain.hpp>`.
 ```text
 include/
 ├── buffers/
-│   └── BitBuffer.hpp
+│   ├── BitBuffer.hpp
+│   └── BitUtils.hpp
 ├── core/
 │   ├── Jtag.hpp
-│   └── JtagCommon.hpp
+│   ├── JtagError.hpp
+│   └── JtagTypes.hpp
 ├── chain/
 │   ├── JtagChain.hpp
 │   ├── JtagDevice.hpp
@@ -420,8 +422,6 @@ include/
     └── ArmJtagDp.hpp
 src/
 ├── main.cpp
-├── core/
-│   └── JtagCommon.cpp
 └── gpio/
     ├── GpioPin.cpp
     └── JtagGpio.cpp
@@ -430,6 +430,12 @@ src/
 `chain/JtagProfile.hpp` defines the profile mechanism; `profiles/` holds concrete
 device profiles. Only components with implementation files have directories in
 `src/`; buffers and chain classes are implemented in their headers.
+
+`core/JtagError.hpp` defines `JTAG::ERROR`; `core/JtagTypes.hpp` defines pin types
+and protocol constants. Header-only `buffers/BitUtils.hpp` provides
+`BitUtils::getBit(index, data)` and `BitUtils::set(index, data, value)` for raw
+byte arrays. These helpers use LSB-first packing and require valid indices and
+storage. `BitBuffer` retains its bounds-checked `getBit()` and `set()` methods.
 
 Applications use `Jtag` from `core/Jtag.hpp` and `BitBuffer` for packed bit sequences.
 `Jtag` is implemented entirely in its header; `JtagGpio` and `GpioPin` retain

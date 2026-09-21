@@ -9,7 +9,6 @@
 
 //_____ I N C L U D E S _______________________________________________________
 #include <buffers/BitBuffer.hpp>
-#include <buffers/BitUtils.hpp>
 #include <gpio/JtagGpio.hpp>
 #include <core/JtagError.hpp>
 #include <core/JtagTypes.hpp>
@@ -56,11 +55,6 @@ public:
   template <size_t Capacity>
   JTAG::ERROR ir(const BitBuffer<Capacity> &instruction)
   {
-    uint8_t tms_pre[1] = {IR_TMS_PRE};
-    uint8_t tms_post[1] = {IR_TMS_POST};
-    uint8_t tdi_pre[1] = {0x00};
-    uint8_t tdi_post[1] = {0x00};
-
     if (!instruction.valid()) {
       return JTAG::ERROR::INVALID_BUFFER;
     }
@@ -68,7 +62,7 @@ public:
     /* Goto `Shift-IR` state */
     for (uint16_t i_seq = 0; i_seq < IR_TMS_PRE_LEN; i_seq++)
     {
-      bus.clock(BitUtils::getBit(i_seq, &tms_pre[0]), BitUtils::getBit(i_seq, &tdi_pre[0]));
+      bus.clock((IR_TMS_PRE >> i_seq) & 1U, 0);
     }
 
     uint16_t length = instruction.bitCount();
@@ -85,7 +79,7 @@ public:
     /* Goto `Run-Test/Idle` state */
     for (uint16_t i_seq = 0; i_seq < IR_TMS_POST_LEN; i_seq++)
     {
-      bus.clock(BitUtils::getBit(i_seq, &tms_post[0]), BitUtils::getBit(i_seq, &tdi_post[0]));
+      bus.clock((IR_TMS_POST >> i_seq) & 1U, 0);
     }
 
     return JTAG::ERROR::NO;

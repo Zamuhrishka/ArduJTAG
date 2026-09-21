@@ -1,4 +1,3 @@
-#include <buffers/BitUtils.hpp>
 #include <Arduino.h>
 #include <core/Jtag.hpp>
 #include <unity.h>
@@ -17,9 +16,9 @@ uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
 {
   const size_t tick = clocks++;
   TEST_ASSERT_TRUE(tick < sizeof(sent) * 8);
-  BitUtils::set(tick, sentTms, tms);
-  BitUtils::set(tick, sent, tdi);
-  return BitUtils::getBit(tick % (sizeof(response) * 8), response);
+  if (tms) sentTms[tick / 8] |= uint8_t(1U << (tick % 8));
+  if (tdi) sent[tick / 8] |= uint8_t(1U << (tick % 8));
+  return ((response[(tick % (sizeof(response) * 8)) / 8] >> ((tick % (sizeof(response) * 8)) % 8)) & 1U);
 }
 JTAG::ERROR JtagGpio::setSpeed(uint32_t) { return JTAG::ERROR::NO; }
 
@@ -56,11 +55,11 @@ static void check_clock_cycles(size_t count)
   TEST_ASSERT_EQUAL_UINT32(count, clocks);
   TEST_ASSERT_EQUAL_UINT32(count, tdo.bitCount());
   for (size_t i = 0; i < count; ++i) {
-    TEST_ASSERT_EQUAL_INT(i % 3 == 0, BitUtils::getBit(i, sentTms));
-    TEST_ASSERT_EQUAL_INT(i % 5 == 0, BitUtils::getBit(i, sent));
+    TEST_ASSERT_EQUAL_INT(i % 3 == 0, ((sentTms[(i) / 8] >> ((i) % 8)) & 1U));
+    TEST_ASSERT_EQUAL_INT(i % 5 == 0, ((sent[(i) / 8] >> ((i) % 8)) & 1U));
     TEST_ASSERT_EQUAL_INT(i % 3 == 0, tms.getBit(i));
     TEST_ASSERT_EQUAL_INT(i % 5 == 0, tdi.getBit(i));
-    TEST_ASSERT_EQUAL_INT(BitUtils::getBit(i % (sizeof(response) * 8), response), tdo.getBit(i));
+    TEST_ASSERT_EQUAL_INT(((response[(i % (sizeof(response) * 8)) / 8] >> ((i % (sizeof(response) * 8)) % 8)) & 1U), tdo.getBit(i));
   }
   if (count % 8)
     TEST_ASSERT_EQUAL_HEX8(0, tdo.byte(tdo.byteCount() - 1) >> (count % 8));

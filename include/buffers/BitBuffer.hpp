@@ -5,7 +5,6 @@
  * @brief Fixed-capacity storage for JTAG bit sequences.
  */
 
-#include <buffers/BitUtils.hpp>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -230,7 +229,7 @@ public:
    * @param index Bit index in the active sequence.
    * @return The bit value, or false if index is outside the active sequence.
    */
-  bool getBit(size_t index) const { return index < length && BitUtils::getBit(index, storage); }
+  bool getBit(size_t index) const { return index < length && ((storage[index / BitsPerByte] >> (index % BitsPerByte)) & 1U); }
 
   /**
    * @brief Reads a packed byte.
@@ -252,7 +251,12 @@ public:
       return false;
     }
 
-    BitUtils::set(index, storage, value);
+    const uint8_t mask = uint8_t(1U << (index % BitsPerByte));
+    if (value) {
+      storage[index / BitsPerByte] |= mask;
+    } else {
+      storage[index / BitsPerByte] &= uint8_t(~mask);
+    }
 
     return true;
   }

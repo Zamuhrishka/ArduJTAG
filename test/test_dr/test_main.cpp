@@ -1,4 +1,3 @@
-#include <buffers/BitUtils.hpp>
 #include <Arduino.h>
 #include <core/Jtag.hpp>
 #include <unity.h>
@@ -21,7 +20,7 @@ uint8_t JtagGpio::clock(uint8_t, uint8_t tdi)
   }
 
   const size_t bit = tick - 3;
-  BitUtils::set(bit, sent, tdi);
+  if (tdi) sent[bit / 8] |= uint8_t(1U << (bit % 8));
   return (response[bit / 8] >> (bit % 8)) & 1;
 }
 

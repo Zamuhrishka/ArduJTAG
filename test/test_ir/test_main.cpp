@@ -1,4 +1,3 @@
-#include <buffers/BitUtils.hpp>
 #include <Arduino.h>
 #include <core/Jtag.hpp>
 #include <unity.h>
@@ -16,8 +15,8 @@ uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
 {
   const size_t tick = clocks++;
   TEST_ASSERT_TRUE(tick < sizeof(clockTms) * 8);
-  BitUtils::set(tick, clockTms, tms);
-  BitUtils::set(tick, clockTdi, tdi);
+  if (tms) clockTms[tick / 8] |= uint8_t(1U << (tick % 8));
+  if (tdi) clockTdi[tick / 8] |= uint8_t(1U << (tick % 8));
   return 0;
 }
 
@@ -39,17 +38,17 @@ static void check_ir_trace(const BitBuffer<32767> &input)
   // Enter Shift-IR with 0,1,1,0,0; exit with the final data bit, then 1,0.
   const uint8_t pre[] = {0, 1, 1, 0, 0};
   for (size_t i = 0; i < sizeof(pre); ++i) {
-    TEST_ASSERT_EQUAL_INT(pre[i], BitUtils::getBit(i, clockTms));
-    TEST_ASSERT_EQUAL_INT(0, BitUtils::getBit(i, clockTdi));
+    TEST_ASSERT_EQUAL_INT(pre[i], ((clockTms[(i) / 8] >> ((i) % 8)) & 1U));
+    TEST_ASSERT_EQUAL_INT(0, ((clockTdi[(i) / 8] >> ((i) % 8)) & 1U));
   }
   for (size_t i = 0; i < count; ++i) {
-    TEST_ASSERT_EQUAL_INT(input.getBit(i), BitUtils::getBit(i + 5, clockTdi));
-    TEST_ASSERT_EQUAL_INT(i == count - 1, BitUtils::getBit(i + 5, clockTms));
+    TEST_ASSERT_EQUAL_INT(input.getBit(i), ((clockTdi[(i + 5) / 8] >> ((i + 5) % 8)) & 1U));
+    TEST_ASSERT_EQUAL_INT(i == count - 1, ((clockTms[(i + 5) / 8] >> ((i + 5) % 8)) & 1U));
   }
-  TEST_ASSERT_EQUAL_INT(1, BitUtils::getBit(count + 5, clockTms));
-  TEST_ASSERT_EQUAL_INT(0, BitUtils::getBit(count + 6, clockTms));
-  TEST_ASSERT_EQUAL_INT(0, BitUtils::getBit(count + 5, clockTdi));
-  TEST_ASSERT_EQUAL_INT(0, BitUtils::getBit(count + 6, clockTdi));
+  TEST_ASSERT_EQUAL_INT(1, ((clockTms[(count + 5) / 8] >> ((count + 5) % 8)) & 1U));
+  TEST_ASSERT_EQUAL_INT(0, ((clockTms[(count + 6) / 8] >> ((count + 6) % 8)) & 1U));
+  TEST_ASSERT_EQUAL_INT(0, ((clockTdi[(count + 5) / 8] >> ((count + 5) % 8)) & 1U));
+  TEST_ASSERT_EQUAL_INT(0, ((clockTdi[(count + 6) / 8] >> ((count + 6) % 8)) & 1U));
 }
 
 static void check_ir_buffer(size_t count)

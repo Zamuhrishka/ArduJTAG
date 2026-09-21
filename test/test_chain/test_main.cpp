@@ -1,3 +1,4 @@
+#include "../support/SimulatedGpio.hpp"
 #include <chain/JtagChain.hpp>
 #include <profiles/ArmJtagDp.hpp>
 #include <unity.h>
@@ -9,10 +10,7 @@ static size_t responseStart;
 static size_t responseOffset;
 static const uint8_t responseBytes[] = {0xA5, 0x03, 0xCD, 0x89};
 static size_t responseBits;
-GpioPin::GpioPin(int, int) {}
-JtagGpio::JtagGpio(GpioPin a, GpioPin b, GpioPin c, GpioPin d, GpioPin e)
-  : _tms(a), _tdi(b), _tdo(c), _tck(d), _rst(e) {}
-uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
+static uint8_t simulateClock(uint8_t tms, uint8_t tdi)
 {
   TEST_ASSERT_TRUE(clocks < sizeof(tmsTrace));
   tmsTrace[clocks] = tms;

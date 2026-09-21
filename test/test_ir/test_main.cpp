@@ -1,3 +1,4 @@
+#include "../support/SimulatedGpio.hpp"
 #include <Arduino.h>
 #include <core/Jtag.hpp>
 #include <unity.h>
@@ -7,11 +8,8 @@ static size_t clocks;
 static uint8_t clockTms[4097];
 static uint8_t clockTdi[4097];
 
-GpioPin::GpioPin(int, int) {}
-JtagGpio::JtagGpio(GpioPin a, GpioPin b, GpioPin c, GpioPin d, GpioPin e)
-  : _tms(a), _tdi(b), _tdo(c), _tck(d), _rst(e) {}
 
-uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
+static uint8_t simulateClock(uint8_t tms, uint8_t tdi)
 {
   const size_t tick = clocks++;
   TEST_ASSERT_TRUE(tick < sizeof(clockTms) * 8);
@@ -20,7 +18,6 @@ uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
   return 0;
 }
 
-JTAG::ERROR JtagGpio::setSpeed(uint32_t) { return JTAG::ERROR::NO; }
 
 void setUp()
 {

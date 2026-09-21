@@ -8,6 +8,8 @@
 #pragma once
 
 //_____ I N C L U D E S _______________________________________________________
+#include <Arduino.h>
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 //_____ C O N F I G S  ________________________________________________________
@@ -89,3 +91,69 @@ private:
   uint32_t pin = 0;
   uint8_t dir = 0;
 };
+
+inline GpioPin::GpioPin(int pin, int dir)
+{
+  assert(dir == INPUT || dir == OUTPUT);
+  this->assign(pin, dir);
+}
+
+inline void GpioPin::setHigh()
+{
+  this->setValue(HIGH);
+}
+
+inline void GpioPin::setLow()
+{
+  this->setValue(LOW);
+}
+
+inline int GpioPin::get() const
+{
+  assert(this->dir == INPUT);
+  return digitalRead(this->pin);
+}
+
+inline void GpioPin::pulseHigh(int us)
+{
+  this->setHigh();
+  delayMicroseconds(us);
+  this->setLow();
+}
+
+inline void GpioPin::pulseLow(int us)
+{
+  this->setHigh();
+  delayMicroseconds(us);
+  this->setLow();
+}
+
+inline void GpioPin::setValue(int value)
+{
+  assert(value == LOW || value == HIGH);
+  assert(this->dir == OUTPUT);
+
+  digitalWrite(this->pin, value);
+}
+
+inline void GpioPin::assign(int pin, int dir)
+{
+  assert(dir == INPUT || dir == OUTPUT);
+
+  this->pin = pin;
+  this->dir = dir;
+
+  digitalWrite(this->pin, LOW);
+  pinMode(this->pin, this->dir);
+}
+
+inline void GpioPin::setDir(int dir)
+{
+  assert(dir == INPUT || dir == OUTPUT);
+  this->dir = dir;
+}
+
+inline int GpioPin::getDir() const
+{
+  return this->dir;
+}

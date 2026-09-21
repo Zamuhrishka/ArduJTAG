@@ -42,9 +42,13 @@ See [platformio.ini](../platformio.ini) for the environment configuration.
 
 ## Test setup and limits
 
-The protocol tests use the real header implementations, with simulated `JtagGpio`/`GpioPin`
-implementations and a minimal [support/Arduino.h](support/Arduino.h). Simulated traces and counters are reset before
-each test. `test_gpio` instead exercises the real GPIO clock routine, while keeping pin access and time simulated.
+The tests use the real header-only implementations, including `GpioPin` and
+`JtagGpio`, with a minimal [support/Arduino.h](support/Arduino.h). Protocol suites
+simulate Arduino pin access and time using [support/SimulatedGpio.hpp](support/SimulatedGpio.hpp);
+each suite supplies the TDO response and records sampled clocks. Traces and
+counters are reset before each test. `test_gpio` uses its own Arduino simulation
+to check pin levels, clock edges and the ordering of TDO reads.
+
 
 These tests check software behavior and operation ordering. They do not measure physical GPIO timing, signal integrity
 or communication with an actual JTAG chain. They also do not validate real target opcodes, memory transactions or

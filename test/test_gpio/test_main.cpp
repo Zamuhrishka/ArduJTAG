@@ -2,9 +2,7 @@
 #include <gpio/JtagGpio.hpp>
 #include <unity.h>
 
-// Native suites normally replace JtagGpio. This suite compiles its real
-// implementation to test the ordering of pin operations inside clock().
-#include "../../src/gpio/JtagGpio.cpp"
+// Exercise the real header-only GPIO backend with simulated Arduino functions.
 
 static const uint8_t TMS_PIN = 1, TDI_PIN = 2, TDO_PIN = 3, TCK_PIN = 4;
 static uint8_t levels[6];
@@ -17,10 +15,8 @@ void TestSerial::println(unsigned char) { ++serialCalls; }
 unsigned long micros() { return nowMicros; }
 void delayMicroseconds(unsigned int us) { nowMicros += us; }
 
-GpioPin::GpioPin(int number, int direction) : pin(number), dir(direction) {}
-void GpioPin::setHigh() { setValue(HIGH); }
-void GpioPin::setLow() { setValue(LOW); }
-void GpioPin::setValue(int value)
+void pinMode(unsigned int, int) {}
+void digitalWrite(unsigned int pin, int value)
 {
   if (pin == TCK_PIN && value != levels[pin]) {
     if (value == HIGH) {
@@ -33,7 +29,7 @@ void GpioPin::setValue(int value)
   }
   levels[pin] = value;
 }
-int GpioPin::get() const
+int digitalRead(unsigned int pin)
 {
   TEST_ASSERT_EQUAL_UINT32(TDO_PIN, pin);
   TEST_ASSERT_EQUAL_UINT8(HIGH, levels[TCK_PIN]);

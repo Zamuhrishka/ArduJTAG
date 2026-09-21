@@ -16,3 +16,7 @@ struct TestSerial
   void println(unsigned char value);
 };
 extern TestSerial Serial;
+
+void digitalWrite(unsigned int pin, int value);
+int digitalRead(unsigned int pin);
+void pinMode(unsigned int pin, int mode);

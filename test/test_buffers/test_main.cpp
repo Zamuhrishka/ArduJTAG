@@ -1,14 +1,10 @@
+#include "../support/SimulatedGpio.hpp"
 #include <Arduino.h>
 #include <core/Jtag.hpp>
 #include <unity.h>
 
-// Stubs required by the JTAG sources linked into native test modules.
-GpioPin::GpioPin(int, int) {}
-JtagGpio::JtagGpio(GpioPin a, GpioPin b, GpioPin c, GpioPin d, GpioPin e)
-  : _tms(a), _tdi(b), _tdo(c), _tck(d), _rst(e) {}
 
-uint8_t JtagGpio::clock(uint8_t, uint8_t) { return 0; }
-JTAG::ERROR JtagGpio::setSpeed(uint32_t) { return JTAG::ERROR::NO; }
+static uint8_t simulateClock(uint8_t, uint8_t) { return 0; }
 
 void setUp() {}
 void tearDown() {}

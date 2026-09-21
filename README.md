@@ -420,23 +420,20 @@ include/
 └── profiles/
     └── ArmJtagDp.hpp
 src/
-├── main.cpp
-└── gpio/
-    ├── GpioPin.cpp
-    └── JtagGpio.cpp
+└── main.cpp
 ```
 
 `chain/JtagProfile.hpp` defines the profile mechanism; `profiles/` holds concrete
-device profiles. Only components with implementation files have directories in
-`src/`; buffers and chain classes are implemented in their headers.
+device profiles. All library classes, including the GPIO backend, are implemented in headers.
+`src/main.cpp` selects the application sketch.
 
 `core/JtagError.hpp` defines `JTAG::ERROR`; `core/JtagTypes.hpp` defines pin types
 and protocol constants. `BitBuffer` provides bounds-checked `getBit()` and `set()`
 methods for reading and modifying packed bits.
 
 Applications use `Jtag` from `core/Jtag.hpp` and `BitBuffer` for packed bit sequences.
-`Jtag` is implemented entirely in its header; `JtagGpio` and `GpioPin` retain
-separate implementation files.
+`Jtag`, `JtagGpio` and `GpioPin` are header-only. GPIO method definitions are
+`inline`, allowing inclusion from multiple translation units.
 `Jtag` owns a concrete `JtagGpio`, declared in `include/gpio/JtagGpio.hpp`, as an
 internal implementation detail, outside the supported application API.
 
@@ -619,8 +616,8 @@ The sanitizer configuration has been verified on Linux with GCC. Sanitizer
 availability depends on the host toolchain; use `native` for the standard Windows
 setup above.
 
-Protocol tests use a simulated bus; `test_gpio` uses the real `JtagGpio`
-implementation with simulated pins and time. They check TAP sequences and
+Tests use the real header-only GPIO implementation with simulated Arduino pin
+and time functions; `test_gpio` additionally checks edge and sampling order. They check TAP sequences and
 software operation ordering, but do not measure physical timing or validate
 communication with an actual target. See [test/README.md](test/README.md) for the
 complete coverage and test setup.

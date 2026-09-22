@@ -1,8 +1,5 @@
 /**
- * \file         GpioPin.hpp
- * \author       Aliaksander Kavalchuk (aliaksander.kavalchuk@gmail.com)
- * \brief        This file contains the prototypes for the GpioPin class which is used for managing individual pins in
- *               JTAG interface.
+ * \brief This file contains the prototypes for the GpioPin class which is used for managing individual pins in JTAG interface.
  */
 
 #pragma once
@@ -23,47 +20,69 @@ class GpioPin
 {
 public:
   GpioPin() = delete;
-  explicit GpioPin(int pin, int dir);
+
+  explicit GpioPin(int pin, int dir)
+  {
+    assert(dir == INPUT || dir == OUTPUT);
+    this->assign(pin, dir);
+  }
 
   /**
    * \brief Set the pin to high voltage level.
    *
    */
-  void setHigh();
+  void setHigh() { this->setValue(HIGH); }
 
   /**
    * \brief Set the pin to low voltage level.
    *
    */
-  void setLow();
+  void setLow() { this->setValue(LOW); }
 
   /**
    * \brief Read the current voltage level of the pin.
    *
    * \return int Returns the pin's voltage level as an integer.
    */
-  int get() const;
+  int get() const { return digitalRead(this->pin); }
 
   /**
    * \brief Pulse the pin to high for a specified duration in microseconds.
    *
    * \param us Duration in microseconds for how long the pulse should last.
    */
-  void pulseHigh(int us);
+  void pulseHigh(int us)
+  {
+    this->setHigh();
+    delayMicroseconds(us);
+    this->setLow();
+  }
 
   /**
    * \brief Pulse the pin to low for a specified duration in microseconds.
    *
    * \param us Duration in microseconds for how long the pulse should last.
    */
-  void pulseLow(int us);
+  void pulseLow(int us)
+  {
+    this->setHigh();
+    delayMicroseconds(us);
+    this->setLow();
+  }
 
   /**
    * \brief Set the pin's voltage level.
    *
    * \param value The value to set: high or low.
    */
-  void setValue(int value);
+  void setValue(int value)
+  {
+    assert(value == LOW || value == HIGH);
+    assert(this->dir == OUTPUT);
+
+    digitalWrite(this->pin, value);
+  }
+
 
   /**
    * \brief Assign a new pin number and direction to the GpioPin.
@@ -71,89 +90,36 @@ public:
    * \param pin The new pin number to be assigned.
    * \param dir The direction of the pin (input or output).
    */
-  void assign(int pin, int dir);
+  void assign(int pin, int dir)
+  {
+    assert(dir == INPUT || dir == OUTPUT);
+
+    this->pin = pin;
+    this->dir = dir;
+
+    digitalWrite(this->pin, LOW);
+    pinMode(this->pin, this->dir);
+  }
 
   /**
    * \brief Set the direction of the pin.
    *
    * \param dir The direction to set: input or output.
    */
-  void setDir(int dir);
+  void setDir(int dir)
+  {
+    assert(dir == INPUT || dir == OUTPUT);
+    this->dir = dir;
+  }
 
   /**
    * \brief Get the current direction of the pin.
    *
    * \return int Returns the direction of the pin.
    */
-  int getDir() const;
+  int getDir() const { return this->dir; }
 
 private:
   uint32_t pin = 0;
   uint8_t dir = 0;
 };
-
-inline GpioPin::GpioPin(int pin, int dir)
-{
-  assert(dir == INPUT || dir == OUTPUT);
-  this->assign(pin, dir);
-}
-
-inline void GpioPin::setHigh()
-{
-  this->setValue(HIGH);
-}
-
-inline void GpioPin::setLow()
-{
-  this->setValue(LOW);
-}
-
-inline int GpioPin::get() const
-{
-  assert(this->dir == INPUT);
-  return digitalRead(this->pin);
-}
-
-inline void GpioPin::pulseHigh(int us)
-{
-  this->setHigh();
-  delayMicroseconds(us);
-  this->setLow();
-}
-
-inline void GpioPin::pulseLow(int us)
-{
-  this->setHigh();
-  delayMicroseconds(us);
-  this->setLow();
-}
-
-inline void GpioPin::setValue(int value)
-{
-  assert(value == LOW || value == HIGH);
-  assert(this->dir == OUTPUT);
-
-  digitalWrite(this->pin, value);
-}
-
-inline void GpioPin::assign(int pin, int dir)
-{
-  assert(dir == INPUT || dir == OUTPUT);
-
-  this->pin = pin;
-  this->dir = dir;
-
-  digitalWrite(this->pin, LOW);
-  pinMode(this->pin, this->dir);
-}
-
-inline void GpioPin::setDir(int dir)
-{
-  assert(dir == INPUT || dir == OUTPUT);
-  this->dir = dir;
-}
-
-inline int GpioPin::getDir() const
-{
-  return this->dir;
-}

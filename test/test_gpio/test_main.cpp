@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <gpio/JtagGpio.hpp>
+#include <backends/gpio/JtagGpio.hpp>
 #include <unity.h>
 
 // Exercise the real header-only GPIO backend with simulated Arduino functions.
@@ -29,6 +29,7 @@ void digitalWrite(unsigned int pin, int value)
   }
   levels[pin] = value;
 }
+
 int digitalRead(unsigned int pin)
 {
   TEST_ASSERT_EQUAL_UINT32(TDO_PIN, pin);
@@ -39,19 +40,25 @@ int digitalRead(unsigned int pin)
 
 void setUp()
 {
-  for (size_t i = 0; i < sizeof(levels); ++i) levels[i] = LOW;
+  for (size_t i = 0; i < sizeof(levels); ++i) {
+    levels[i] = LOW;
+  }
+
   targetBits = 0x4BA00477;
   risingEdges = fallingEdges = reads = serialCalls = 0;
   nowMicros = 0;
 }
+
 void tearDown() {}
 
 void test_clock_preserves_first_and_last_tdo_bits()
 {
   JtagGpio gpio(GpioPin(1, OUTPUT), GpioPin(2, OUTPUT), GpioPin(3, INPUT),
                 GpioPin(4, OUTPUT), GpioPin(5, OUTPUT));
+
   // Exercise both a typical IDCODE and a pattern with its top bit set.
   const uint32_t patterns[] = {0x4BA00477UL, 0x80000001UL};
+
   for (size_t pattern = 0; pattern < 2; ++pattern) {
     targetBits = patterns[pattern];
     uint32_t received = 0;
@@ -61,8 +68,10 @@ void test_clock_preserves_first_and_last_tdo_bits()
       TEST_ASSERT_EQUAL_UINT8(bitIndex == 31, levels[TMS_PIN]);
       TEST_ASSERT_EQUAL_UINT8(bitIndex % 2, levels[TDI_PIN]);
     }
+
     TEST_ASSERT_EQUAL_HEX32(patterns[pattern], received);
   }
+
   TEST_ASSERT_EQUAL_UINT32(64, risingEdges);
   TEST_ASSERT_EQUAL_UINT32(64, fallingEdges);
   TEST_ASSERT_EQUAL_UINT32(64, reads);

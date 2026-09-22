@@ -9,7 +9,7 @@
 
 //_____ I N C L U D E S _______________________________________________________
 #include <buffers/BitBuffer.hpp>
-#include <gpio/JtagGpio.hpp>
+#include <backends/gpio/JtagGpio.hpp>
 #include <core/JtagError.hpp>
 #include <core/JtagTypes.hpp>
 #include <Arduino.h>

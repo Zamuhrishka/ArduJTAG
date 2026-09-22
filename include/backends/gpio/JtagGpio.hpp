@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <core/JtagError.hpp>
 #include <core/JtagTypes.hpp>
-#include <gpio/GpioPin.hpp>
+#include <backends/gpio/GpioPin.hpp>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S __________________________________________________________

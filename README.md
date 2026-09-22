@@ -29,7 +29,7 @@ The project is grew out of the [Diving into JTAG protocol](https://medium.com/@a
 | `JtagChain<MaxDevices, Capacity>` | Addresses a target by index and puts other devices in BYPASS. |
 | `JtagDeviceAccess<Profile, Chain>` | Provides named operations on one device, including `readIdcode()` and profile-supported boundary-scan commands. |
 
-`JtagGpio` and `GpioPin` implement the GPIO backend. Applications normally use
+`JtagGpio` and `GpioPin` in `include/backends/gpio/` implement the GPIO backend. Applications normally use
 `Jtag` directly or through `JtagChain`.
 
 ## Install
@@ -437,9 +437,10 @@ include/
 │   ├── JtagDevice.hpp
 │   ├── JtagDeviceAccess.hpp
 │   └── JtagProfile.hpp
-├── gpio/
-│   ├── GpioPin.hpp
-│   └── JtagGpio.hpp
+├── backends/
+│   └── gpio/
+│       ├── GpioPin.hpp
+│       └── JtagGpio.hpp
 └── profiles/
     ├── ArmJtagDp.hpp
     ├── Stm32F405_415_407_417Lqfp100.hpp
@@ -459,7 +460,7 @@ methods for reading and modifying packed bits.
 Applications use `Jtag` from `core/Jtag.hpp` and `BitBuffer` for packed bit sequences.
 `Jtag`, `JtagGpio` and `GpioPin` are header-only. GPIO method definitions are
 `inline`, allowing inclusion from multiple translation units.
-`Jtag` owns a concrete `JtagGpio`, declared in `include/gpio/JtagGpio.hpp`, as an
+`Jtag` owns a concrete `JtagGpio`, declared in `include/backends/gpio/JtagGpio.hpp`, as an
 internal implementation detail, outside the supported application API.
 
 `Jtag` validates buffers, processes bit sequences, and handles TAP transitions.

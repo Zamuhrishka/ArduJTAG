@@ -225,11 +225,14 @@ See [TransferChain](examples/chain/TransferChain/TransferChain.ino) for a comple
 alternative.
 
 See [EnableArmDapChain](examples/chain/EnableArmDapChain/EnableArmDapChain.ino) for
-the `EnableArmDap` register sequence expressed with named DPACC/APACC transfers.
+a raw register sequence expressed with named DPACC/APACC transfers.
 Its requests and responses contain 35 target bits; the chain adds the BYPASS bit.
 It preserves the original reset points; the final zero request also reloads
 APACC because every `transfer()` programs IR. ACK/WAIT handling remains outside
 this example.
+
+The direct [EnableArmDap](examples/direct/EnableArmDap/EnableArmDap.ino) example
+adds DAP error handling and verifies a write to SRAM before restoring the original word.
 
 ### Named instruction profiles
 

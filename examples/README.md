@@ -24,7 +24,7 @@ These examples construct whole-chain IR/DR buffers or explicit clock sequences a
 | --- | --- |
 | [ReadId](direct/ReadId/ReadId.ino) | Reads and labels both STM32F407 TAP IDCODEs using explicit 9-bit IR and 33-bit DR sequences, accounting for the other TAP's BYPASS bit. |
 | [ReadIdSequence](direct/ReadIdSequence/ReadIdSequence.ino) | Reads and labels both STM32F407 TAP IDCODEs using two explicit 54-clock TMS/TDI sequences, each preceded by reset. Extracts IDs after TAP transition clocks and the appropriate BYPASS offset. |
-| [EnableArmDap](direct/EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data. |
+| [EnableArmDap](direct/EnableArmDap/EnableArmDap.ino) | Powers up DAP, halts the CPU, writes and verifies one SRAM word, then restores the original value; checks JTAG-DP responses and errors. |
 | [ExtestLeds](direct/ExtestLeds/ExtestLeds.ino) | Performs one LED chase through PRELOAD/EXTEST using only `Jtag` and `BitBuffer`, with explicit IR codes and a full 407-bit DR vector. |
 | [ReadUserButton](direct/ReadUserButton/ReadUserButton.ino) | Reads B1 USER through SAMPLE using explicit IR/DR buffers and prints its initial state and subsequent changes. |
 
@@ -38,7 +38,7 @@ These examples use `JtagChain` and, where applicable, `JtagDeviceAccess` to addr
 | [ReadIdChain](chain/ReadIdChain/ReadIdChain.ino) | Reads the Debug TAP IDCODE once per second and prints it as a hexadecimal integer. |
 | [TransferChain](chain/TransferChain/TransferChain.ino) | Reads IDCODE through a named instruction and prints the returned bytes, least significant byte first. |
 | [BypassChain](chain/BypassChain/BypassChain.ino) | Selects BYPASS on the Debug TAP and the other TAP, once at startup. |
-| [EnableArmDapChain](chain/EnableArmDapChain/EnableArmDapChain.ino) | Expresses the same DP/AP request sequence through `JtagChain` and prints the final target response. |
+| [EnableArmDapChain](chain/EnableArmDapChain/EnableArmDapChain.ino) | Sends a fixed DP/AP request sequence through `JtagChain` and prints the raw final response; unlike the direct example, it does not verify memory or handle DAP errors. |
 | [BoundaryScanCommands](chain/BoundaryScanCommands/BoundaryScanCommands.ino) | Runs a boundary-scan demonstration once, after its teaching profile and vectors have been configured. |
 | [BoundaryScanPins](chain/BoundaryScanPins/BoundaryScanPins.ino) | Uses `BoundaryScan<Layout>` to prepare STM32F4 vectors by pin name and read PD12 with SAMPLE. Optional EXTEST drives PD12 HIGH, captures its level, then disables the driver. |
 
@@ -53,6 +53,49 @@ not a profile for a real chip**. Before running `BoundaryScanCommands`:
 > 3. Remove operations unsupported by the device and supply any required INTEST initialization or test clocks.
 > 4. Check the chain capacity and set `DeviceConfigured = true`.
 
+
+## EnableArmDap configuration
+
+[EnableArmDap](direct/EnableArmDap/EnableArmDap.ino) runs once on STM32F407:
+
+1. Checks the Debug TAP IDCODE, selects AP0 and requests debug/system power-up.
+2. Waits for power acknowledgements, configures AHB-AP for 32-bit access without
+   address increment, and halts the Cortex-M4 through DHCSR.
+3. Saves the word at `TestAddress` (default `0x20000000`), writes `TestValue`
+   (`0xA5A55A5A`), reads it back and prints `VERIFY PASS` or `VERIFY FAIL`.
+4. Restores and checks the original word. A transfer failure triggers a
+   best-effort restoration; a failed restoration is reported explicitly.
+
+**Release target NRST** for this example. Disconnect the onboard ST-LINK from
+its target interface so it does not compete for the JTAG signals. The sketch
+releases controller D6/nTRST explicitly. The CPU is left halted: power-cycle the
+STM32 to run its firmware again. Reset the Arduino to repeat the test.
+Choose a test SRAM word that DMA or other active bus masters are not changing;
+halting the CPU does not stop every peripheral.
+
+The sketch uses only `Jtag` and `BitBuffer`. IR is 9 bits (Debug instruction
+plus Boundary BYPASS); DR is 36 bits (35-bit DP/AP request plus BYPASS).
+ACK belongs to the previous request. A DP RDBUFF scan obtains that result
+without issuing another AP access. WAIT responses are retried with a bounded
+attempt count; CTRL/STAT is checked because JTAG-DP's OK/FAULT ACK does not
+alone prove success. No TAP resets are inserted between DAP requests.
+See the [ARM ADIv5 specification, JTAG-DP and RDBUFF sections](https://documentation-service.arm.com/static/5f900abff86e16515cdc063b)
+and [STM32 RM0090, debug support](https://www.st.com/resource/zh/reference_manual/DM00031020.pdf).
+
+Example successful output (the original word depends on target RAM):
+
+```text
+SRAM address: 0x20000000
+Original: 0x12345678
+Writing:  0xA5A55A5A
+Read:     0xA5A55A5A
+VERIFY PASS
+Original word restored. CPU halted; power-cycle STM32 to run firmware.
+```
+
+Validated with a simulated TAP/DAP and compiled for Arduino Nano; physical
+STM32F4DISCOVERY execution still needs verification. The chain variant retains
+its earlier raw-request demonstration.
 
 ## ReadUserButton configuration
 

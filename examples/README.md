@@ -25,6 +25,7 @@ These examples construct whole-chain IR/DR buffers or explicit clock sequences a
 | [ReadId](direct/ReadId/ReadId.ino) | Reads and labels both STM32F407 TAP IDCODEs using explicit 9-bit IR and 33-bit DR sequences, accounting for the other TAP's BYPASS bit. |
 | [ReadIdSequence](direct/ReadIdSequence/ReadIdSequence.ino) | Reads and labels both STM32F407 TAP IDCODEs using two explicit 54-clock TMS/TDI sequences, each preceded by reset. Extracts IDs after TAP transition clocks and the appropriate BYPASS offset. |
 | [EnableArmDap](direct/EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data. |
+| [ExtestLeds](direct/ExtestLeds/ExtestLeds.ino) | Performs one LED chase through PRELOAD/EXTEST using only `Jtag` and `BitBuffer`, with explicit IR codes and a full 407-bit DR vector. |
 
 ### Using `JtagChain`
 
@@ -51,6 +52,28 @@ not a profile for a real chip**. Before running `BoundaryScanCommands`:
 > 3. Remove operations unsupported by the device and supply any required INTEST initialization or test clocks.
 > 4. Check the chain capacity and set `DeviceConfigured = true`.
 
+
+## ExtestLeds configuration
+
+[ExtestLeds](direct/ExtestLeds/ExtestLeds.ino) runs once at startup on
+STM32F4DISCOVERY with an STM32F407 in LQFP100. It uses no chain or profile classes.
+The sketch checks the Boundary TAP IDCODE, preloads all LED outputs LOW,
+selects EXTEST and lights LD4 (green/PD12), LD3 (orange/PD13), LD5 (red/PD14),
+then LD6 (blue/PD15), for 500 ms each. These LEDs are active high; see the
+[ST board schematic, sheet 6](https://www.st.com/resource/en/schematic_pack/mb997-f407vgt6-b02_schematic.pdf).
+It then turns them off, disables their drivers and selects BYPASS on both TAPs.
+
+Hold target **NRST LOW externally throughout the test**, as required by the
+supplied ST BSDL. NRST is separate from JTRST on controller D6. Check external
+connections: EXTEST controls the entire BSR, and the example disables every
+non-LED output driver. BYPASS returns pins to normal target control; it does not
+keep the final BSR values driving the pins. No STM32 application firmware is needed.
+
+The 9-bit IR selects Debug BYPASS plus Boundary PRELOAD (`0x02`) or EXTEST
+(`0x00`). Each 407-bit DR vector starts with the Debug BYPASS bit, followed by
+406 boundary cells. BSDL cell N therefore appears at buffer index N+1. The
+control-cell list and LED indices are explicit in the sketch. `loop()` is empty;
+reset the Arduino to repeat. Hardware execution has not yet been verified.
 
 ## BoundaryScanPins configuration
 

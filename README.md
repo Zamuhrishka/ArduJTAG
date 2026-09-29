@@ -53,10 +53,10 @@ Named commands also require their profile header, such as
 
 ## Examples
 
-The [example guide](examples/README.md) describes all nine sketches, their output,
+The [example guide](examples/README.md) describes all ten sketches, their output,
 target configuration and how to select and upload them:
 
-- **Direct `Jtag`:** ReadId, ReadIdSequence and EnableArmDap.
+- **Direct `Jtag`:** ReadId, ReadIdSequence, EnableArmDap and ExtestLeds.
 - **`JtagChain`:** ReadIdChain, TransferChain, BypassChain, EnableArmDapChain and
   BoundaryScanCommands and BoundaryScanPins.
 

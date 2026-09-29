@@ -53,10 +53,10 @@ Named commands also require their profile header, such as
 
 ## Examples
 
-The [example guide](examples/README.md) describes all ten sketches, their output,
+The [example guide](examples/README.md) describes all eleven sketches, their output,
 target configuration and how to select and upload them:
 
-- **Direct `Jtag`:** ReadId, ReadIdSequence, EnableArmDap and ExtestLeds.
+- **Direct `Jtag`:** ReadId, ReadIdSequence, EnableArmDap, ExtestLeds and ReadUserButton.
 - **`JtagChain`:** ReadIdChain, TransferChain, BypassChain, EnableArmDapChain and
   BoundaryScanCommands and BoundaryScanPins.
 
@@ -595,7 +595,7 @@ Run the Unity tests on your computer:
 pio test -e native
 ```
 
-There are **59 tests in eight modules**, each built as a separate executable:
+There are **60 tests in eight modules**, each built as a separate executable:
 
 | Module | What it checks |
 | --- | --- |
@@ -604,7 +604,7 @@ There are **59 tests in eight modules**, each built as a separate executable:
 | `core/test_dr` | Data transmission, response capture and output bounds. |
 | `core/test_clock_cycles` | TMS/TDI sequences, TDO capture, sequence limits and reset. |
 | `chain/test_chain` | Chain ordering, BYPASS, profiles, device access and standard operations. |
-| `backends/gpio/test_gpio` | TDO sampling before the falling TCK edge in the real GPIO clock routine. |
+| `backends/gpio/test_gpio` | TDO sampling before the falling TCK edge and clock timing across counter boundaries. |
 | `boundary/test_boundary` | Generic vector operations, driver polarities and invalid layout/buffer handling. |
 | `profiles/test_stm32_profile` | STM32 BSDL instruction codes, IDCODE matching, cell mapping and full 406-bit scans. |
 

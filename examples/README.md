@@ -26,6 +26,7 @@ These examples construct whole-chain IR/DR buffers or explicit clock sequences a
 | [ReadIdSequence](direct/ReadIdSequence/ReadIdSequence.ino) | Reads and labels both STM32F407 TAP IDCODEs using two explicit 54-clock TMS/TDI sequences, each preceded by reset. Extracts IDs after TAP transition clocks and the appropriate BYPASS offset. |
 | [EnableArmDap](direct/EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data. |
 | [ExtestLeds](direct/ExtestLeds/ExtestLeds.ino) | Performs one LED chase through PRELOAD/EXTEST using only `Jtag` and `BitBuffer`, with explicit IR codes and a full 407-bit DR vector. |
+| [ReadUserButton](direct/ReadUserButton/ReadUserButton.ino) | Reads B1 USER through SAMPLE using explicit IR/DR buffers and prints its initial state and subsequent changes. |
 
 ### Using `JtagChain`
 
@@ -52,6 +53,27 @@ not a profile for a real chip**. Before running `BoundaryScanCommands`:
 > 3. Remove operations unsupported by the device and supply any required INTEST initialization or test clocks.
 > 4. Check the chain capacity and set `DeviceConfigured = true`.
 
+
+## ReadUserButton configuration
+
+[ReadUserButton](direct/ReadUserButton/ReadUserButton.ino) reads the B1 USER button
+on STM32F4DISCOVERY through SAMPLE, without EXTEST or STM32 application firmware.
+B1 is connected to PA0 and is active high according to the
+[ST schematic, sheet 6](https://www.st.com/resource/en/schematic_pack/mb997-f407vgt6-b02_schematic.pdf).
+Hold target **NRST LOW externally** as required by the BSDL; NRST is separate
+from JTRST on controller D6.
+
+After checking the Boundary TAP IDCODE, the sketch selects Debug BYPASS and
+Boundary SAMPLE/PRELOAD. Each read shifts 407 bits: one Debug BYPASS bit plus
+the 406-bit BSR. PA0's input cell is 316, so the returned state is at bit 317.
+The output shows `USER: PRESSED` or `USER: RELEASED` initially and whenever the
+sampled state changes. A 20 ms delay separates scans; this is polling, not
+software debouncing, and short pulses can be missed.
+
+Because SAMPLE and PRELOAD share an opcode, each scan also loads an explicit
+vector with output controls disabled. SAMPLE does not apply that vector to
+output drivers. The example leaves SAMPLE selected while polling and stops on
+a transfer error. Hardware execution has not yet been verified.
 
 ## ExtestLeds configuration
 

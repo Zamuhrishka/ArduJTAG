@@ -1,24 +1,19 @@
-// This sketch demonstrates how to use the ArduJTAG library to perform a sequence of JTAG operations.
-// It sets up the JTAG pins, initializes the JTAG interface, and then sends a specific sequence of operations
-// to the JTAG device. After the sequence is complete, the resulting output is read into a buffer and printed
-// to the Serial Monitor. This is a common operation for interacting with and testing JTAG-compatible devices.
-
+/**
+ * @file ReadIdSequence.ino
+ * @brief Read both STM32F407 TAP IDCODEs with explicit TMS/TDI sequences.
+ * Physical order: TDI -> BoundaryScan TAP (5-bit IR) -> Debug TAP (4-bit IR) -> TDO.
+ * fromBits() strings are written in transmission order, first bit on the left.
+ */
 #include <Arduino.h>
-
 #include <core/Jtag.hpp>
 
-// Define the pin numbers for JTAG interface
-#define TCK 2  // Test Clock
-#define TMS 3  // Test Mode Select
-#define TDI 4  // Test Data In
-#define TDO 5  // Test Data Out
-#define RST 6  // Reset
+#define TCK 2
+#define TMS 3
+#define TDI 4
+#define TDO 5
+#define RST 6 // JTRST, not the STM32 system reset NRST.
 
-// Create an instance of the Jtag class with the specified pin assignments
-Jtag jtag = Jtag(TMS, TDI, TDO, TCK, RST);
-
-// Create a buffer to store the output data
-BitBuffer<54> id;
+Jtag jtag(TMS, TDI, TDO, TCK, RST);
 
 void setup()
 {
@@ -27,25 +22,64 @@ void setup()
 
 void loop()
 {
-  // Define the sequence of TMS and TDI values to send in the JTAG operation
-  // For read ID for chip need to send next bits:
-  // TMS: 01100 | 000000001 | 10 | 100 | 000000000000000000000000000000011 | 00
-  // TDI: 00000 | 011111111 | 00 | 000 | 000000000000000000000000000000000 | 00
-  const auto tms = BitBuffer<54>::fromBits("01100" "000000001" "10" "100" "000000000000000000000000000000011" "00");
-  const auto tdi = BitBuffer<54>::fromBits("00000" "011111111" "00" "000" "000000000000000000000000000000000" "00");
+  // Each scan follows reset() and contains 54 clocks:
+  // 5 enter Shift-IR, 9 shift IR, 2 return to Idle, 3 enter Shift-DR,
+  // 33 shift DR (32 IDCODE + 1 BYPASS), 2 return to Idle.
+  // The last IR/DR data clock sets TMS high to leave the shift state.
+  const auto tms = BitBuffer<54>::fromBits(
+      "01100"                           // Enter Shift-IR.
+      "000000001"                       // Shift 9 IR bits; exit on the last bit.
+      "10"                              // Update-IR -> Run-Test/Idle.
+      "100"                             // Enter Shift-DR.
+      "00000000" "00000000" "00000000" "00000000" "1" // Shift 33 DR bits.
+      "10");                            // Update-DR -> Run-Test/Idle.
+
+  // Debug IDCODE (0xE, LSB first), then BoundaryScan BYPASS (0x1F).
+  const auto debugTdi = BitBuffer<54>::fromBits(
+      "00000"
+      "0111" "11111"
+      "00"
+      "000"
+      "00000000" "00000000" "00000000" "00000000" "0"
+      "00");
+
+  // Debug BYPASS (0xF), then BoundaryScan IDCODE (0x01, LSB first).
+  const auto boundaryTdi = BitBuffer<54>::fromBits(
+      "00000"
+      "1111" "10000"
+      "00"
+      "000"
+      "00000000" "00000000" "00000000" "00000000" "0"
+      "00");
+
+  // clockCycles() captures TDO on EVERY clock, including TAP transitions.
+  // DR data starts at index 5 + 9 + 2 + 3 = 19 in the captured sequence.
+  constexpr size_t DrStart = 19;
+  BitBuffer<54> captured;
 
   jtag.reset();
-  if (jtag.clockCycles(tms, tdi, id) != JTAG::ERROR::NO) {
-    Serial.println("JTAG transfer failed");
-    return;
+  if (jtag.clockCycles(tms, debugTdi, captured) != JTAG::ERROR::NO) {
+    Serial.println("Error reading Debug TAP IDCODE");
+  } else {
+    uint32_t idcode = 0;
+    // Debug IDCODE occupies indices 19..50; index 51 is BoundaryScan BYPASS.
+    for (size_t i = 0; i < 32; ++i) {
+      idcode |= uint32_t(captured.getBit(DrStart + i)) << i;
+    }
+    Serial.print("Debug TAP IDCODE: ");
+    Serial.println(idcode, HEX);
   }
 
-  Serial.print("> ");
-
-  for (size_t i = 0; i < id.byteCount(); i++)
-  {
-    Serial.print(id.byte(i), HEX);
-    Serial.print(" ");
+  jtag.reset();
+  if (jtag.clockCycles(tms, boundaryTdi, captured) != JTAG::ERROR::NO) {
+    Serial.println("Error reading BoundaryScan TAP IDCODE");
+  } else {
+    uint32_t idcode = 0;
+    // Index 19 is Debug BYPASS; BoundaryScan IDCODE occupies indices 20..51.
+    for (size_t i = 0; i < 32; ++i) {
+      idcode |= uint32_t(captured.getBit(DrStart + 1 + i)) << i;
+    }
+    Serial.print("BoundaryScan TAP IDCODE: ");
+    Serial.println(idcode, HEX);
   }
-  Serial.println(" ");
 }

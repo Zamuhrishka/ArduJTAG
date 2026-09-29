@@ -36,7 +36,9 @@ void loop()
 
   jtag.reset();
   JTAG::ERROR status = jtag.ir(readDebugTapIdInstruction);
-  if (status == JTAG::ERROR::NO) status = jtag.dr(input, debugTapId);
+  if (status == JTAG::ERROR::NO) {
+    status = jtag.dr(input, debugTapId);
+  }
 
   if (status != JTAG::ERROR::NO) {
     Serial.println("Error reading Debug TAP IDCODE");
@@ -52,7 +54,9 @@ void loop()
 
   jtag.reset();
   status = jtag.ir(readBoundaryScanTapIdInstruction);
-  if (status == JTAG::ERROR::NO) status = jtag.dr(input, boundaryScanTapId);
+  if (status == JTAG::ERROR::NO) {
+    status = jtag.dr(input, boundaryScanTapId);
+  }
 
   if (status != JTAG::ERROR::NO) {
     Serial.println("Error reading BoundaryScan TAP IDCODE");

@@ -40,7 +40,7 @@ test/
 | [test_dr](core/test_dr/test_main.cpp) | `Jtag::dr()` transmission, response capture, output bounds and buffer validation. |
 | [test_clock_cycles](core/test_clock_cycles/test_main.cpp) | Explicit TMS/TDI sequences, TDO capture, sequence limits and TAP reset clocks. |
 | [test_chain](chain/test_chain/test_main.cpp) | Chain ordering, BYPASS padding, profiles, device access, IDCODE and standard device operations. |
-| [test_gpio](backends/gpio/test_gpio/test_main.cpp) | Sampling TDO before the falling TCK edge in the real `JtagGpio::clock()` implementation. |
+| [test_gpio](backends/gpio/test_gpio/test_main.cpp) | Sampling TDO before the falling TCK edge and checking half-period delays across the 16-bit boundary, 32-bit timer wraparound, and long pauses in `JtagGpio::clock()`. |
 | [test_boundary](boundary/test_boundary/test_main.cpp) | Generic boundary vectors, both disable polarities, internal initial values, input/output-only pins and validation without partial writes. |
 | [test_stm32_profile](profiles/test_stm32_profile/test_main.cpp) | STM32 BSDL opcodes and widths, IDCODE masks, cell mappings, initial vectors, pin helpers and 406-bit scans with Debug TAP BYPASS. |
 

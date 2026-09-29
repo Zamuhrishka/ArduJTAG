@@ -78,9 +78,33 @@ void test_clock_preserves_first_and_last_tdo_bits()
   TEST_ASSERT_EQUAL_UINT32(0, serialCalls);
 }
 
+void test_clock_timing_across_counter_boundaries()
+{
+  // A 100 kHz clock needs at least 5 us for each half-period.
+  const uint32_t starts[] = {65534UL, 65536UL, 100000UL, 0xFFFFFFFDUL};
+  for (uint32_t start : starts) {
+    nowMicros = start;
+    JtagGpio gpio(GpioPin(1, OUTPUT), GpioPin(2, OUTPUT), GpioPin(3, INPUT),
+                  GpioPin(4, OUTPUT), GpioPin(5, OUTPUT));
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(JTAG::ERROR::NO),
+                          static_cast<int>(gpio.setSpeed(100)));
+    // Wrap explicitly: unsigned long is wider on some host platforms.
+    nowMicros = uint32_t(start + 3U);
+    gpio.clock(0, 0);
+    TEST_ASSERT_EQUAL_UINT32(uint32_t(start + 10U), uint32_t(nowMicros));
+
+    // A long pause already satisfies the low half-period; only high remains.
+    nowMicros = uint32_t(nowMicros + 100000UL);
+    const uint32_t before = nowMicros;
+    gpio.clock(0, 0);
+    TEST_ASSERT_EQUAL_UINT32(uint32_t(before + 5U), uint32_t(nowMicros));
+  }
+}
+
 int main()
 {
   UNITY_BEGIN();
   RUN_TEST(test_clock_preserves_first_and_last_tdo_bits);
+  RUN_TEST(test_clock_timing_across_counter_boundaries);
   return UNITY_END();
 }

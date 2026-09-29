@@ -121,11 +121,14 @@ inline uint8_t JtagGpio::clock(uint8_t tms, uint8_t tdi)
 #endif
 
   // Waiting until TCK has been stable for at least jtag_min_tck_micros.
-  size_t cur_micros = micros();
+  // micros() is a 32-bit counter on AVR; size_t is only 16 bits.
+  // Unsigned subtraction also handles the counter wrapping through zero.
+  const uint32_t cur_micros = micros();
+  const uint32_t elapsed = cur_micros - this->last_tck_micros;
 
-  if (cur_micros < this->last_tck_micros + this->min_tck_micros)
+  if (elapsed < this->min_tck_micros)
   {
-    delayMicroseconds(this->last_tck_micros + this->min_tck_micros - cur_micros);
+    delayMicroseconds(this->min_tck_micros - elapsed);
   }
 
   this->_tck.setHigh();

@@ -599,19 +599,19 @@ There are **59 tests in eight modules**, each built as a separate executable:
 
 | Module | What it checks |
 | --- | --- |
-| `test_buffers` | Bit/byte packing, construction, partial-byte masking and bounds. |
-| `test_ir` | Instruction bits, TAP transitions and IR buffer validation. |
-| `test_dr` | Data transmission, response capture and output bounds. |
-| `test_clock_cycles` | TMS/TDI sequences, TDO capture, sequence limits and reset. |
-| `test_chain` | Chain ordering, BYPASS, profiles, device access and standard operations. |
-| `test_gpio` | TDO sampling before the falling TCK edge in the real GPIO clock routine. |
-| `test_boundary` | Generic vector operations, driver polarities and invalid layout/buffer handling. |
-| `test_stm32_profile` | STM32 BSDL instruction codes, IDCODE matching, cell mapping and full 406-bit scans. |
+| `buffers/test_buffers` | Bit/byte packing, construction, partial-byte masking and bounds. |
+| `core/test_ir` | Instruction bits, TAP transitions and IR buffer validation. |
+| `core/test_dr` | Data transmission, response capture and output bounds. |
+| `core/test_clock_cycles` | TMS/TDI sequences, TDO capture, sequence limits and reset. |
+| `chain/test_chain` | Chain ordering, BYPASS, profiles, device access and standard operations. |
+| `backends/gpio/test_gpio` | TDO sampling before the falling TCK edge in the real GPIO clock routine. |
+| `boundary/test_boundary` | Generic vector operations, driver polarities and invalid layout/buffer handling. |
+| `profiles/test_stm32_profile` | STM32 BSDL instruction codes, IDCODE matching, cell mapping and full 406-bit scans. |
 
 To run only IR tests:
 
 ```sh
-pio test -e native -f test_ir
+pio test -e native -f core/test_ir
 ```
 
 PlatformIO installs the Native platform and Unity on the first run. The suite

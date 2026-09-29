@@ -1,4 +1,4 @@
-#include "../support/SimulatedGpio.hpp"
+#include <SimulatedGpio.hpp>
 #include <Arduino.h>
 #include <core/Jtag.hpp>
 #include <unity.h>
@@ -13,8 +13,15 @@ static uint8_t simulateClock(uint8_t tms, uint8_t tdi)
 {
   const size_t tick = clocks++;
   TEST_ASSERT_TRUE(tick < sizeof(clockTms) * 8);
-  if (tms) clockTms[tick / 8] |= uint8_t(1U << (tick % 8));
-  if (tdi) clockTdi[tick / 8] |= uint8_t(1U << (tick % 8));
+
+  if (tms) {
+    clockTms[tick / 8] |= uint8_t(1U << (tick % 8));
+  }
+
+  if (tdi) {
+    clockTdi[tick / 8] |= uint8_t(1U << (tick % 8));
+  }
+
   return 0;
 }
 
@@ -38,52 +45,48 @@ static void check_ir_trace(const BitBuffer<32767> &input)
     TEST_ASSERT_EQUAL_INT(pre[i], ((clockTms[(i) / 8] >> ((i) % 8)) & 1U));
     TEST_ASSERT_EQUAL_INT(0, ((clockTdi[(i) / 8] >> ((i) % 8)) & 1U));
   }
+
   for (size_t i = 0; i < count; ++i) {
     TEST_ASSERT_EQUAL_INT(input.getBit(i), ((clockTdi[(i + 5) / 8] >> ((i + 5) % 8)) & 1U));
     TEST_ASSERT_EQUAL_INT(i == count - 1, ((clockTms[(i + 5) / 8] >> ((i + 5) % 8)) & 1U));
   }
+
   TEST_ASSERT_EQUAL_INT(1, ((clockTms[(count + 5) / 8] >> ((count + 5) % 8)) & 1U));
   TEST_ASSERT_EQUAL_INT(0, ((clockTms[(count + 6) / 8] >> ((count + 6) % 8)) & 1U));
   TEST_ASSERT_EQUAL_INT(0, ((clockTdi[(count + 5) / 8] >> ((count + 5) % 8)) & 1U));
   TEST_ASSERT_EQUAL_INT(0, ((clockTdi[(count + 6) / 8] >> ((count + 6) % 8)) & 1U));
 }
 
+/**
+ * @brief Check an IR transfer of count bits using a repeating 100 bit pattern.
+ * Verifies success, the TMS/TDI trace and that the input buffer is unchanged.
+ * The trace contains count + 7 clocks: five to enter Shift-IR, count to shift
+ * the instruction, and two to pass through Update-IR back to Run-Test/Idle.
+ * The first entry clock (TMS = 0) handles either Test-Logic-Reset or Run-Test/Idle.
+ * The last data clock also exits Shift-IR (TMS = 1), so no extra exit clock is needed.
+ */
 static void check_ir_buffer(size_t count)
 {
   Jtag jtag(1, 2, 3, 4, 5);
   BitBuffer<32767> input;
   TEST_ASSERT_TRUE(input.resize(count));
-  for (size_t i = 0; i < count; ++i) input.set(i, i % 3 == 0);
+
+  for (size_t i = 0; i < count; ++i) {
+    input.set(i, i % 3 == 0);
+  }
+
   const auto before = input;
   TEST_ASSERT_EQUAL_INT(int(JTAG::ERROR::NO), int(jtag.ir(input)));
+
   check_ir_trace(before);
   TEST_ASSERT_EQUAL_UINT32(before.bitCount(), input.bitCount());
   TEST_ASSERT_EQUAL_HEX8_ARRAY(before.data(), input.data(), input.byteCount());
 }
 
-/**
- * Tests IR functionality for a single bit.
- */
 static void test_ir_single_bit() { check_ir_buffer(1); }
-
-/**
- * Tests IR functionality for a full byte.
- */
 static void test_ir_full_byte() { check_ir_buffer(8); }
-
-/**
- * Tests IR functionality for a partial byte.
- */
 static void test_ir_partial_byte() { check_ir_buffer(9); }
-
-/**
- * Tests IR functionality for a long instruction.
- */
 static void test_ir_long_instruction() { check_ir_buffer(33); }
-
-/**
- * Tests IR functionality at maximum capacity.
- */
 static void test_ir_max_capacity() { check_ir_buffer(32767); }
 
 static void test_ir_invalid_inputs_without_clocks()

@@ -1,21 +1,19 @@
-// This sketch demonstrates how to use the ArduJTAG library to read the ID of a STM32F4 via JTAG.
-// It sets up the JTAG pins, initializes the JTAG interface, sends a standard ID code instruction,
-// reads the response, and prints the chip ID to the Serial Monitor. This is a common operation
-// in verifying communication with and the identity of a JTAG-compatible device.
-
+/**
+ * @file ReadId.ino
+ * @brief Read both STM32F407 TAP IDCODEs using whole-chain IR/DR buffers.
+ * Physical order: TDI -> BoundaryScan TAP (5-bit IR) -> Debug TAP (4-bit IR) -> TDO.
+ * Each read selects IDCODE on one TAP and BYPASS on the other.
+ */
 #include <Arduino.h>
-
 #include <core/Jtag.hpp>
 
-// Define the pin numbers for JTAG interface
-#define TCK 2  // Test Clock
-#define TMS 3  // Test Mode Select
-#define TDI 4  // Test Data In
-#define TDO 5  // Test Data Out
-#define RST 6  // Reset
+#define TCK 2
+#define TMS 3
+#define TDI 4
+#define TDO 5
+#define RST 6 // JTRST, not the STM32 system reset NRST.
 
-// Create an instance of the Jtag class with the specified pin assignments
-Jtag jtag = Jtag(TMS, TDI, TDO, TCK, RST);
+Jtag jtag(TMS, TDI, TDO, TCK, RST);
 
 void setup()
 {
@@ -24,29 +22,47 @@ void setup()
 
 void loop()
 {
-  /**
-   * @brief Read the ID code from the STM32F4.
-   * @note The instruction used here is specific to the STM32F4 series and may vary for other devices.
-   * Ensure that the correct instruction is used for your target device
-   */
-  const auto instruction = BitBuffer<32>::fromBytes({0x01, 0xFE}, 9);
-  const auto input = BitBuffer<32>::fromBytes({0x00, 0x00, 0x00, 0x00});
-  BitBuffer<32> output;
+  // Instructions for the TAP nearest TDO are shifted first.
+  // fromBytes() takes bytes in array order, LSB first within each byte.
+  // Debug IDCODE (0xE) + BoundaryScan BYPASS (0x1F): 0111 11111.
+  const auto readDebugTapIdInstruction = BitBuffer<9>::fromBytes({0xFE, 0x01}, 9);
+  // Debug BYPASS (0xF) + BoundaryScan IDCODE (0x01): 1111 10000.
+  const auto readBoundaryScanTapIdInstruction = BitBuffer<9>::fromBytes({0x1F, 0x00}, 9);
+
+  // The complete DR chain has 32 IDCODE bits and one BYPASS bit.
+  const auto input = BitBuffer<33>::fromBytes({0, 0, 0, 0, 0}, 33);
+  BitBuffer<33> debugTapId;
+  BitBuffer<33> boundaryScanTapId;
 
   jtag.reset();
-  jtag.ir(instruction);
-  JTAG::ERROR status = jtag.dr(input, output);
+  JTAG::ERROR status = jtag.ir(readDebugTapIdInstruction);
+  if (status == JTAG::ERROR::NO) status = jtag.dr(input, debugTapId);
 
   if (status != JTAG::ERROR::NO) {
-    Serial.println("Error occurred while reading JTAG data register.");
+    Serial.println("Error reading Debug TAP IDCODE");
   } else {
     uint32_t id = 0;
-    for (size_t i = 0; i < output.byteCount(); ++i) {
-      id |= uint32_t(output.byte(i)) << (8 * i);
+    // Debug TAP is nearest TDO: bits 0..31 are IDCODE; bit 32 is BYPASS.
+    for (size_t i = 0; i < 32; ++i) {
+      id |= uint32_t(debugTapId.getBit(i)) << i;
     }
-
-    Serial.print("> ");
+    Serial.print("Debug TAP IDCODE: ");
     Serial.println(id, HEX);
   }
 
+  jtag.reset();
+  status = jtag.ir(readBoundaryScanTapIdInstruction);
+  if (status == JTAG::ERROR::NO) status = jtag.dr(input, boundaryScanTapId);
+
+  if (status != JTAG::ERROR::NO) {
+    Serial.println("Error reading BoundaryScan TAP IDCODE");
+  } else {
+    uint32_t id = 0;
+    // Debug BYPASS arrives first: skip bit 0 and decode IDCODE from bits 1..32.
+    for (size_t i = 0; i < 32; ++i) {
+      id |= uint32_t(boundaryScanTapId.getBit(i + 1)) << i;
+    }
+    Serial.print("BoundaryScan TAP IDCODE: ");
+    Serial.println(id, HEX);
+  }
 }

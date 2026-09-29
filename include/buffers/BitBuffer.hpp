@@ -71,6 +71,36 @@ public:
 
   /**
    * @brief Copies all bits from a byte array.
+   *
+   * All fromBytes() overloads use the same bit order:
+   * - Bytes follow array order: bytes[0], then bytes[1], etc.; never reversed.
+   * - Within each byte, bit 0 comes first, followed by bits 1 through 7 (LSB first).
+   * - An explicit bit count selects a prefix of this sequence. A partial final
+   *   byte contributes its LOW bits; unused high bits are cleared.
+   * - Capacity reserves storage; it does not determine the active bit count.
+   * The factory only builds a buffer. JTAG operations later transmit its bits
+   * in this order; fromBits() writes the same order with the FIRST bit on the left.
+   *
+   * @code
+   * // Hex/binary integers are normally written MSB first:
+   * // 0x01 = 00000001, but its transmission order is 10000000.
+   * auto a = BitBuffer<8>::fromBytes({0x01});
+   * auto b = BitBuffer<8>::fromBits("10000000"); // Equivalent to a.
+   *
+   * // Byte 0 first, then byte 1; LSB first within EACH byte.
+   * auto c = BitBuffer<16>::fromBytes({0x01, 0x02});
+   * auto d = BitBuffer<16>::fromBits("1000000001000000"); // Equivalent to c.
+   *
+   * // Nine bits: all of 0xFE (01111111), then bit 0 of 0x01 (1).
+   * auto e = BitBuffer<32>::fromBytes({0xFE, 0x01}, 9);
+   * auto f = BitBuffer<32>::fromBits("011111111"); // Equivalent to e.
+   * // Active length is 9 bits, despite the 32-bit capacity.
+   *
+   * // Swapping the bytes changes the sequence. Only bit 0 of 0xFE is used:
+   * auto g = BitBuffer<32>::fromBytes({0x01, 0xFE}, 9);
+   * auto h = BitBuffer<32>::fromBits("100000000"); // Equivalent to g, NOT e.
+   * @endcode
+   *
    * @tparam ByteCount Number of source bytes, deduced from the array.
    * @param bytes Source array, in transmission order.
    * @return A buffer of ByteCount * BitsPerByte bits, or an empty, invalid buffer if
@@ -93,7 +123,8 @@ public:
    * @param bytes Source array, in transmission order.
    * @param bits Number of bits to copy; must be in 1..Capacity and fit the array.
    * @return The copied prefix, or an empty, invalid buffer for an invalid length.
-   * @note Unused high bits in the final byte are cleared.
+   * @note Bytes follow array order, LSB first within each byte. See the full-array
+   *       fromBytes() overload for examples. Unused high bits in the final byte are cleared.
    */
   template <size_t ByteCount>
   static BitBuffer fromBytes(const uint8_t (&bytes)[ByteCount], size_t bits)
@@ -107,7 +138,8 @@ public:
    * @param bytes Source values, each in 0..255, in transmission order.
    * @return A buffer of ByteCount * BitsPerByte bits, or an empty, invalid buffer if
    *         the length exceeds Capacity or any value is outside 0..255.
-   * @note Supports older AVR GCC versions that deduce braced integer literals
+   * @note Uses the same array-order, LSB-first packing as the byte-array overload.
+   *       Supports older AVR GCC versions that deduce braced integer literals
    *       as int before byte conversion.
    */
   template <size_t ByteCount>
@@ -127,7 +159,8 @@ public:
    * @param bits Number of bits to copy; must be in 1..Capacity and fit the array.
    * @return The copied prefix, or an empty, invalid buffer for an invalid
    *         length or source value.
-   * @note Unused high bits in the final byte are cleared.
+   * @note Bytes follow array order, LSB first within each byte. See the full-array
+   *       fromBytes() overload for examples. Unused high bits in the final byte are cleared.
    */
   template <size_t ByteCount>
   static BitBuffer fromBytes(const int (&bytes)[ByteCount], size_t bits)
@@ -174,7 +207,8 @@ public:
    *             no more than byteCount bytes.
    * @return The copied prefix, or an empty, invalid buffer if bytes is null
    *         or the requested length is invalid.
-   * @note Only the required bytes are copied. Unused high bits in the final
+   * @note Bytes follow array order, LSB first within each byte, as in the
+   *       array overload examples. Only the required bytes are copied. Unused high bits in the final
    *       byte are cleared; the source memory is not retained.
    */
   static BitBuffer fromBytes(const uint8_t *bytes, size_t byteCount, size_t bits)

@@ -1,8 +1,6 @@
 /**
- * \file         Jtag.hpp
- * \author       Aliaksander Kavalchuk (aliaksander.kavalchuk@gmail.com)
- * \brief        This file contains the class definition for the JTAG interface used to communicate with devices
- *               supporting the JTAG protocol.
+ * \brief  This file contains the class definition for the JTAG interface
+ * used to communicate with devices supporting the JTAG protocol.
  */
 
 #pragma once
@@ -18,8 +16,7 @@
 //_____ C L A S S E S __________________________________________________________
 /**
  * \brief This class represents a JTAG interface.
- *        It is used to communicate with and control devices that support JTAG (Joint Test Action Group) protocol.
- *        Note: The default constructor is deleted to prevent instantiation without parameters.
+ *        It is used to communicate with and control devices that support JTAG protocol.
  */
 class Jtag
 {
@@ -196,8 +193,7 @@ public:
   }
 
 private:
-  static constexpr uint8_t RESET_TMS_LEN = 5;
-
+  static constexpr uint8_t RESET_TMS_LEN = 5;  ///< Number of TCK cycles with TMS high to enter Test-Logic-Reset.
 
   static constexpr uint8_t IR_TMS_PRE = 6;  ///< 0b00110, the TMS sequence to enter Shift-IR from Run-Test/Idle.
   static constexpr uint8_t IR_TMS_POST = 1;  ///< 0b00001, the TMS sequence to return to Run-Test/Idle from Shift-IR.

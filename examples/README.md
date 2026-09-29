@@ -22,7 +22,7 @@ These examples construct whole-chain IR/DR buffers or explicit clock sequences a
 
 | Example | What it does |
 | --- | --- |
-| [ReadId](direct/ReadId/ReadId.ino) | Sends a hard-coded 9-bit IR sequence (BoundaryScan TAP (5-bit IR) and Debug TAP (4-bit IR)), reads 32 DR bits (IDCODE), and prints the result as a hexadecimal integer. |
+| [ReadId](direct/ReadId/ReadId.ino) | Reads and labels both STM32F407 TAP IDCODEs using explicit 9-bit IR and 33-bit DR sequences, accounting for the other TAP's BYPASS bit. |
 | [ReadIdSequence](direct/ReadIdSequence/ReadIdSequence.ino) | Sends an explicit 54-clock TMS/TDI sequence after reset and prints all captured TDO bytes. |
 | [EnableArmDap](direct/EnableArmDap/EnableArmDap.ino) | Issues a fixed sequence of DP/AP register requests for enabling debug access, writing and reading data. |
 

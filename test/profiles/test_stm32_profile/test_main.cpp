@@ -1,4 +1,4 @@
-#include "../support/SimulatedGpio.hpp"
+#include <SimulatedGpio.hpp>
 #include <chain/JtagChain.hpp>
 #include <boundary/BoundaryScan.hpp>
 #include <profiles/ArmJtagDp.hpp>

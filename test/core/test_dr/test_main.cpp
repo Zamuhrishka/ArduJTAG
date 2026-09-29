@@ -1,4 +1,4 @@
-#include "../support/SimulatedGpio.hpp"
+#include <SimulatedGpio.hpp>
 #include <Arduino.h>
 #include <core/Jtag.hpp>
 #include <unity.h>

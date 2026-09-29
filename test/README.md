@@ -3,18 +3,46 @@
 The tests check buffer handling, JTAG bit sequences, chain operations and GPIO sampling order on the host computer using PlatformIO Test Runner and Unity.
 No Arduino or target board is required.
 
+## Directory structure
+
+Suites are grouped by library component. Shared Arduino simulation headers stay
+in `support/`, included through the host environment's `-Itest/support` flag.
+
+```text
+test/
+├── README.md
+├── support/
+│   ├── Arduino.h
+│   └── SimulatedGpio.hpp
+├── buffers/
+│   └── test_buffers/
+├── core/
+│   ├── test_ir/
+│   ├── test_dr/
+│   └── test_clock_cycles/
+├── chain/
+│   └── test_chain/
+├── boundary/
+│   └── test_boundary/
+├── profiles/
+│   └── test_stm32_profile/
+└── backends/
+    └── gpio/
+        └── test_gpio/
+```
+
 ## Available test modules
 
 | Module | What it checks |
 | --- | --- |
-| [test_buffers](test_buffers/test_main.cpp) | `BitBuffer` construction, bit/byte ordering, partial-byte masking and invalid input handling. |
-| [test_ir](test_ir/test_main.cpp) | `Jtag::ir()` instruction bits, TAP transitions, supported lengths and rejection of empty instructions. |
-| [test_dr](test_dr/test_main.cpp) | `Jtag::dr()` transmission, response capture, output bounds and buffer validation. |
-| [test_clock_cycles](test_clock_cycles/test_main.cpp) | Explicit TMS/TDI sequences, TDO capture, sequence limits and TAP reset clocks. |
-| [test_chain](test_chain/test_main.cpp) | Chain ordering, BYPASS padding, profiles, device access, IDCODE and standard device operations. |
-| [test_gpio](test_gpio/test_main.cpp) | Sampling TDO before the falling TCK edge in the real `JtagGpio::clock()` implementation. |
-| [test_boundary](test_boundary/test_main.cpp) | Generic boundary vectors, both disable polarities, internal initial values, input/output-only pins and validation without partial writes. |
-| [test_stm32_profile](test_stm32_profile/test_main.cpp) | STM32 BSDL opcodes and widths, IDCODE masks, cell mappings, initial vectors, pin helpers and 406-bit scans with Debug TAP BYPASS. |
+| [test_buffers](buffers/test_buffers/test_main.cpp) | `BitBuffer` construction, bit/byte ordering, partial-byte masking and invalid input handling. |
+| [test_ir](core/test_ir/test_main.cpp) | `Jtag::ir()` instruction bits, TAP transitions, supported lengths and rejection of empty instructions. |
+| [test_dr](core/test_dr/test_main.cpp) | `Jtag::dr()` transmission, response capture, output bounds and buffer validation. |
+| [test_clock_cycles](core/test_clock_cycles/test_main.cpp) | Explicit TMS/TDI sequences, TDO capture, sequence limits and TAP reset clocks. |
+| [test_chain](chain/test_chain/test_main.cpp) | Chain ordering, BYPASS padding, profiles, device access, IDCODE and standard device operations. |
+| [test_gpio](backends/gpio/test_gpio/test_main.cpp) | Sampling TDO before the falling TCK edge in the real `JtagGpio::clock()` implementation. |
+| [test_boundary](boundary/test_boundary/test_main.cpp) | Generic boundary vectors, both disable polarities, internal initial values, input/output-only pins and validation without partial writes. |
+| [test_stm32_profile](profiles/test_stm32_profile/test_main.cpp) | STM32 BSDL opcodes and widths, IDCODE masks, cell mappings, initial vectors, pin helpers and 406-bit scans with Debug TAP BYPASS. |
 
 The generic boundary module has five tests using an independent synthetic layout.
 The STM32 profile module has seven tests using `BoundaryScan` with the real layout metadata. It checks supported instruction aliases
@@ -32,10 +60,10 @@ Install PlatformIO Core and a local C++ compiler (GCC or Clang), then run from t
 pio test -e native
 ```
 
-PlatformIO installs the Native platform and Unity on the first run. Each test is reported separately. To run one module, select its directory name:
+PlatformIO installs the Native platform and Unity on the first run. Each test is reported separately. To run one module, select its path relative to `test/`:
 
 ```sh
-pio test -e native -f test_chain
+pio test -e native -f chain/test_chain
 ```
 
 For AddressSanitizer and UndefinedBehaviorSanitizer on a supported host compiler:

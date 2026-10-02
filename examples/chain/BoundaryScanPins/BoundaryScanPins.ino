@@ -5,10 +5,10 @@
  * NRST is not JTRST (the latter uses controller pin D6).
  */
 #include <Arduino.h>
-#include <boundary/BoundaryScan.hpp>
-#include <chain/JtagChain.hpp>
-#include <profiles/ArmJtagDp.hpp>
-#include <profiles/Stm32F405_415_407_417Lqfp100Boundary.hpp>
+#include <jtag/boundary/BoundaryScan.hpp>
+#include <jtag/chain/JtagChain.hpp>
+#include <jtag/profiles/ArmJtagDp.hpp>
+#include <jtag/profiles/Stm32F405_415_407_417Lqfp100Boundary.hpp>
 
 using Profile = Stm32F405_415_407_417Lqfp100;
 using Layout = Stm32F405_415_407_417Lqfp100Boundary;

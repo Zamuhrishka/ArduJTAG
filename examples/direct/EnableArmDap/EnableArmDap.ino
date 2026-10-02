@@ -6,7 +6,7 @@
  * Power-cycle the target to run its firmware again. Serial: 115200 baud.
  */
 #include <Arduino.h>
-#include <core/Jtag.hpp>
+#include <jtag/core/Jtag.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, nTRST (not target NRST)
 

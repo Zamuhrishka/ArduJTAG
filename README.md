@@ -29,7 +29,7 @@ The project is grew out of the [Diving into JTAG protocol](https://medium.com/@a
 | `JtagChain<MaxDevices, Capacity>` | Addresses a target by index and puts other devices in BYPASS. |
 | `JtagDeviceAccess<Profile, Chain>` | Provides named operations on one device, including `readIdcode()` and profile-supported boundary-scan commands. |
 
-`JtagGpio` and `GpioPin` in `include/backends/gpio/` implement the GPIO backend. Applications normally use
+`JtagGpio` and `GpioPin` in `include/jtag/backends/gpio/` implement the GPIO backend. Applications normally use
 `Jtag` directly or through `JtagChain`.
 
 ## Install
@@ -46,9 +46,9 @@ lib_deps =
     https://github.com/Zamuhrishka/ArduJTAG.git
 ```
 
-Include `core/Jtag.hpp` for direct operations or `chain/JtagChain.hpp` for the chain API.
+Include `jtag/core/Jtag.hpp` for direct operations or `jtag/chain/JtagChain.hpp` for the chain API.
 Named commands also require their profile header, such as
-`profiles/ArmJtagDp.hpp`. To build this repository itself, follow
+`jtag/profiles/ArmJtagDp.hpp`. To build this repository itself, follow
 [Development setup](#development-setup) and [Build firmware](#build-firmware).
 
 ## Examples
@@ -82,7 +82,7 @@ you to pack the entire chain.
 The snippets below assume this controller configuration:
 
 ```cpp
-#include <core/Jtag.hpp>
+#include <jtag/core/Jtag.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, nTRST
 ```
@@ -127,7 +127,7 @@ Run-Test/Idle.
 
 `BitBuffer<Capacity>` stores packed bytes and an exact bit count without heap
 allocation. Capacity is in bits (256 by default; supported range 1..32767).
-Include `core/Jtag.hpp` to use it.
+Include `jtag/core/Jtag.hpp` to use it.
 
 ```cpp
 // The leftmost character is the FIRST bit transmitted on TDI.
@@ -200,13 +200,13 @@ See the [example guide](examples/README.md) for complete sketches and wiring.
 
 ## Working with a device chain
 
-Include `chain/JtagChain.hpp` to address one device while putting the others in
+Include `jtag/chain/JtagChain.hpp` to address one device while putting the others in
 BYPASS. `JtagDevice` stores the IR length; `JtagChain<MaxDevices, Capacity>`
 copies descriptions in physical **TDI-to-TDO order**. Targets are zero-based
 indices in that order. There is no automatic discovery.
 
 ```cpp
-#include <chain/JtagChain.hpp>
+#include <jtag/chain/JtagChain.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, TRST
 JtagChain<2, 40> chain(jtag);
@@ -239,7 +239,7 @@ adds DAP error handling and verifies a write to SRAM before restoring the origin
 A profile gives commands names without storing a command table in each device:
 
 ```cpp
-#include <profiles/ArmJtagDp.hpp>
+#include <jtag/profiles/ArmJtagDp.hpp>
 
 JtagChain<2, 40> namedChain(jtag);
 if (!namedChain.add(JtagDevice(5)) ||
@@ -311,7 +311,7 @@ Use `JtagChain<2, 407>` for this TAP plus the ARM Debug TAP in BYPASS.
 
 The BSDL requires NRST low; this is separate from JTRST and must be arranged
 externally. IDCODE matching ignores revision bits. See the
-[profile guide](include/profiles/README.md) for metadata, pin helpers and usage.
+[profile guide](include/jtag/profiles/README.md) for metadata, pin helpers and usage.
 See [BoundaryScanPins](examples/chain/BoundaryScanPins/BoundaryScanPins.ino) for a
 complete sketch using `BoundaryScan<Layout>` with PD12. SAMPLE is enabled by
 default; output testing through EXTEST is explicitly enabled in the sketch.
@@ -421,49 +421,50 @@ See [ReadIdChain](examples/chain/ReadIdChain/ReadIdChain.ino) for a complete ske
 
 ## Internal implementation
 
-Headers are grouped by responsibility. Include them using their directory paths,
-for example `<core/Jtag.hpp>` or `<chain/JtagChain.hpp>`.
+JTAG headers live under `include/jtag/` and are grouped by responsibility. Include them using their directory paths,
+for example `<jtag/core/Jtag.hpp>` or `<jtag/chain/JtagChain.hpp>`.
 
 ```text
 include/
-├── boundary/
-│   ├── BoundaryScan.hpp
-│   └── BoundaryTypes.hpp
-├── buffers/
-│   └── BitBuffer.hpp
-├── core/
-│   ├── Jtag.hpp
-│   ├── JtagError.hpp
-│   └── JtagTypes.hpp
-├── chain/
-│   ├── JtagChain.hpp
-│   ├── JtagDevice.hpp
-│   ├── JtagDeviceAccess.hpp
-│   └── JtagProfile.hpp
-├── backends/
-│   └── gpio/
-│       ├── GpioPin.hpp
-│       └── JtagGpio.hpp
-└── profiles/
-    ├── ArmJtagDp.hpp
-    ├── Stm32F405_415_407_417Lqfp100.hpp
-    └── Stm32F405_415_407_417Lqfp100Boundary.hpp
+└── jtag/
+    ├── boundary/
+    │   ├── BoundaryScan.hpp
+    │   └── BoundaryTypes.hpp
+    ├── buffers/
+    │   └── BitBuffer.hpp
+    ├── core/
+    │   ├── Jtag.hpp
+    │   ├── JtagError.hpp
+    │   └── JtagTypes.hpp
+    ├── chain/
+    │   ├── JtagChain.hpp
+    │   ├── JtagDevice.hpp
+    │   ├── JtagDeviceAccess.hpp
+    │   └── JtagProfile.hpp
+    ├── backends/
+    │   └── gpio/
+    │       ├── GpioPin.hpp
+    │       └── JtagGpio.hpp
+    └── profiles/
+        ├── ArmJtagDp.hpp
+        ├── Stm32F405_415_407_417Lqfp100.hpp
+        └── Stm32F405_415_407_417Lqfp100Boundary.hpp
 src/
 └── main.cpp
 ```
 
-`chain/JtagProfile.hpp` defines the profile mechanism; `profiles/` holds concrete
+`jtag/chain/JtagProfile.hpp` defines the profile mechanism; `jtag/profiles/` holds concrete
 device profiles. All library classes, including the GPIO backend, are implemented in headers.
 `src/main.cpp` selects the application sketch.
 
-`core/JtagError.hpp` defines `JTAG::ERROR`; `core/JtagTypes.hpp` defines pin types
+`jtag/core/JtagError.hpp` defines `JTAG::ERROR`; `jtag/core/JtagTypes.hpp` defines pin types
 and protocol constants. `BitBuffer` provides bounds-checked `getBit()` and `set()`
 methods for reading and modifying packed bits.
 
-Applications use `Jtag` from `core/Jtag.hpp` and `BitBuffer` for packed bit sequences.
+Applications use `Jtag` from `jtag/core/Jtag.hpp` and `BitBuffer` for packed bit sequences.
 `Jtag`, `JtagGpio` and `GpioPin` are header-only. GPIO method definitions are
 `inline`, allowing inclusion from multiple translation units.
-`Jtag` owns a concrete `JtagGpio`, declared in `include/backends/gpio/JtagGpio.hpp`, as an
+`Jtag` owns a concrete `JtagGpio`, declared in `include/jtag/backends/gpio/JtagGpio.hpp`, as an
 internal implementation detail, outside the supported application API.
 
 `Jtag` validates buffers, processes bit sequences, and handles TAP transitions.

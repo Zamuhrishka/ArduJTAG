@@ -5,7 +5,7 @@
  * Each read selects IDCODE on one TAP and BYPASS on the other.
  */
 #include <Arduino.h>
-#include <core/Jtag.hpp>
+#include <jtag/core/Jtag.hpp>
 
 #define TCK 2
 #define TMS 3

@@ -7,7 +7,7 @@
  * SAMPLE captures inputs without selecting EXTEST or driving boundary outputs.
  */
 #include <Arduino.h>
-#include <core/Jtag.hpp>
+#include <jtag/core/Jtag.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, JTRST
 

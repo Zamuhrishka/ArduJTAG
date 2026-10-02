@@ -1,7 +1,7 @@
 #pragma once
 
-#include <boundary/BoundaryTypes.hpp>
-#include <profiles/Stm32F405_415_407_417Lqfp100.hpp>
+#include <jtag/boundary/BoundaryTypes.hpp>
+#include <jtag/profiles/Stm32F405_415_407_417Lqfp100.hpp>
 
 /**
  * @brief Package-specific BSR layout from the same ST BSDL V1.1 as Stm32F405_415_407_417Lqfp100.

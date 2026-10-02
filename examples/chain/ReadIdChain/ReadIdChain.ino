@@ -3,8 +3,8 @@
  * @brief Example sketch demonstrating how to read the ID code from a JTAG chain with multiple devices.
  */
 
-#include <chain/JtagChain.hpp>
-#include <profiles/ArmJtagDp.hpp>
+#include <jtag/chain/JtagChain.hpp>
+#include <jtag/profiles/ArmJtagDp.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, TRST
 JtagChain<2, 40> chain(jtag);

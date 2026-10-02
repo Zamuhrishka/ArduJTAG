@@ -1,6 +1,6 @@
 // Read the Debug TAP IDCODE using ArduJTAG's generic chain transfer API.
-#include <chain/JtagChain.hpp>
-#include <profiles/ArmJtagDp.hpp>
+#include <jtag/chain/JtagChain.hpp>
+#include <jtag/profiles/ArmJtagDp.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, TRST
 // Capacity includes the target's 32 DR bits and one BYPASS bit.

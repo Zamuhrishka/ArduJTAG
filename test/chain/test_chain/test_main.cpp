@@ -1,6 +1,6 @@
 #include <SimulatedGpio.hpp>
-#include <chain/JtagChain.hpp>
-#include <profiles/ArmJtagDp.hpp>
+#include <jtag/chain/JtagChain.hpp>
+#include <jtag/profiles/ArmJtagDp.hpp>
 #include <unity.h>
 #include <string.h>
 

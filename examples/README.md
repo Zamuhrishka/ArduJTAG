@@ -157,7 +157,7 @@ drivers are disabled during EXTEST; this affects more than PD12. BYPASS restores
 normal target pin control, so the final vector does not force pin levels afterward.
 
 `BoundaryScan` helpers only edit or decode buffers; the `tap` methods send them.
-See the [profile guide](../include/profiles/README.md) for the layout and API.
+See the [profile guide](../include/jtag/profiles/README.md) for the layout and API.
 
 ## Run an example with PlatformIO
 

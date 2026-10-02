@@ -1,6 +1,6 @@
 #include <SimulatedGpio.hpp>
 #include <Arduino.h>
-#include <core/Jtag.hpp>
+#include <jtag/core/Jtag.hpp>
 #include <unity.h>
 
 

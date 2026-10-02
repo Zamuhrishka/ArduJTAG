@@ -1,4 +1,4 @@
-#include <boundary/BoundaryScan.hpp>
+#include <jtag/boundary/BoundaryScan.hpp>
 #include <unity.h>
 
 // Independent layout: two enable polarities and an internal cell initially 1.

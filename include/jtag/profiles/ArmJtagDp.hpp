@@ -1,7 +1,7 @@
 #pragma once
 
-#include <buffers/BitBuffer.hpp>
-#include <chain/JtagProfile.hpp>
+#include <jtag/buffers/BitBuffer.hpp>
+#include <jtag/chain/JtagProfile.hpp>
 
 /**
  * @brief Standard ARM JTAG-DP instructions for a four-bit IR.

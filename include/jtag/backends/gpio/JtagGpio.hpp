@@ -8,9 +8,9 @@
 //_____ I N C L U D E S _______________________________________________________
 #include <Arduino.h>
 #include <assert.h>
-#include <core/JtagError.hpp>
-#include <core/JtagTypes.hpp>
-#include <backends/gpio/GpioPin.hpp>
+#include <jtag/core/JtagError.hpp>
+#include <jtag/core/JtagTypes.hpp>
+#include <jtag/backends/gpio/GpioPin.hpp>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________
 //_____ C L A S S E S __________________________________________________________

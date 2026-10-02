@@ -6,10 +6,10 @@
 #pragma once
 
 //_____ I N C L U D E S _______________________________________________________
-#include <buffers/BitBuffer.hpp>
-#include <backends/gpio/JtagGpio.hpp>
-#include <core/JtagError.hpp>
-#include <core/JtagTypes.hpp>
+#include <jtag/buffers/BitBuffer.hpp>
+#include <jtag/backends/gpio/JtagGpio.hpp>
+#include <jtag/core/JtagError.hpp>
+#include <jtag/core/JtagTypes.hpp>
 #include <Arduino.h>
 //_____ C O N F I G S  ________________________________________________________
 //_____ D E F I N I T I O N S _________________________________________________

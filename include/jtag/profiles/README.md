@@ -70,10 +70,10 @@ this BoundaryScan TAP and the Debug TAP requires capacity for 407 DR bits,
 including the latter's BYPASS bit.
 
 ```cpp
-#include <chain/JtagChain.hpp>
-#include <boundary/BoundaryScan.hpp>
-#include <profiles/ArmJtagDp.hpp>
-#include <profiles/Stm32F405_415_407_417Lqfp100Boundary.hpp>
+#include <jtag/chain/JtagChain.hpp>
+#include <jtag/boundary/BoundaryScan.hpp>
+#include <jtag/profiles/ArmJtagDp.hpp>
+#include <jtag/profiles/Stm32F405_415_407_417Lqfp100Boundary.hpp>
 
 using Profile = Stm32F405_415_407_417Lqfp100;
 using Layout = Stm32F405_415_407_417Lqfp100Boundary;
@@ -110,7 +110,7 @@ and remember that captures precede application of the newly shifted values.
 The supplied profile has been checked with host simulations, not physical hardware.
 
 For a complete sketch with Serial output and optional PRELOAD/EXTEST output
-control, see [BoundaryScanPins](../../examples/chain/BoundaryScanPins/BoundaryScanPins.ino).
+control, see [BoundaryScanPins](../../../examples/chain/BoundaryScanPins/BoundaryScanPins.ino).
 
 ## Defining another boundary layout
 

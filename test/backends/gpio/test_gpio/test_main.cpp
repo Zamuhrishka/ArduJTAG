@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <backends/gpio/JtagGpio.hpp>
+#include <jtag/backends/gpio/JtagGpio.hpp>
 #include <unity.h>
 
 // Exercise the real header-only GPIO backend with simulated Arduino functions.

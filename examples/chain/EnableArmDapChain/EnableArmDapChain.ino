@@ -1,8 +1,8 @@
 // ArduJTAG JtagChain version of EnableArmDap.
 // Reuses the original DP/AP requests and reset points. This demonstrates raw
 // register exchanges, not a complete DAP driver with ACK/WAIT handling.
-#include <chain/JtagChain.hpp>
-#include <profiles/ArmJtagDp.hpp>
+#include <jtag/chain/JtagChain.hpp>
+#include <jtag/profiles/ArmJtagDp.hpp>
 
 #define TCK 2
 #define TMS 3

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <boundary/BoundaryTypes.hpp>
-#include <buffers/BitBuffer.hpp>
+#include <jtag/boundary/BoundaryTypes.hpp>
+#include <jtag/buffers/BitBuffer.hpp>
 
 /**
  * @brief Stateless operations on a device's complete boundary-register vector.

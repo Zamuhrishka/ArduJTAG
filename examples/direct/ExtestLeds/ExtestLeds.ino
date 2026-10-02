@@ -7,7 +7,7 @@
  * Check external connections before running. No STM32 firmware is needed.
  */
 #include <Arduino.h>
-#include <core/Jtag.hpp>
+#include <jtag/core/Jtag.hpp>
 
 Jtag jtag(3, 4, 5, 2, 6); // TMS, TDI, TDO, TCK, JTRST
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <buffers/BitBuffer.hpp>
-#include <core/JtagError.hpp>
+#include <jtag/buffers/BitBuffer.hpp>
+#include <jtag/core/JtagError.hpp>
 
 /**
  * @brief Non-owning access to one device through its instruction profile.

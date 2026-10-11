@@ -16,10 +16,10 @@ class ChainConfigTests(unittest.TestCase):
         transport = Transport()
         session = ChainSession(transport, self.load())
         transport.reply = '0' + f'{0x06413041:032b}'[::-1]
-        self.assertEqual('0x06413041', session.command('idcode'))
+        self.assertEqual('0x06413041', session.command('idcode').splitlines()[0])
         session.command('target', 'debug')
         transport.reply = f'{0x4BA00477:032b}'[::-1] + '0'
-        self.assertEqual('0x4BA00477', session.command('idcode'))
+        self.assertEqual('0x4BA00477', session.command('idcode').splitlines()[0])
         self.assertEqual(('ir', '011111111'), transport.calls[-2])
         self.assertEqual('BYPASS', session.sessions[0].mode)
         self.assertEqual(1, transport.calls.count(('reset',)))

@@ -109,13 +109,15 @@ After installing `tools/requirements.txt` into a Python virtual environment:
 python -m unittest discover -s test/python -v
 ```
 
-The Python suite contains forty-five tests: five exercise the real pySerialTransfer
+The Python suite contains forty-eight tests: five exercise the real pySerialTransfer
 encoder/parser over an in-memory connection, including CRC failures and
 uncertain-execution timeouts; seventeen use Click CliRunner to check argument
 validation, chained subcommands, command-specific help without opening a port,
 explicit interactive sessions, EOF, interrupts, port cleanup and BSDL-backed
-command sequences. Sixteen additional BSDL tests cover parsing, malformed
-metadata, chain offsets, IDCODE masks, preload order, pin state retention,
+command sequences. Nineteen additional BSDL tests cover parsing, malformed
+metadata, chain offsets, IDCODE masks and decoded fields (including unknown
+vendors), vendor table caching, paths independent of the working directory,
+numeric fallback for missing or invalid tables, preload order, pin state retention,
 unsupported cells, shared controls, limits, failure invalidation and Debug TAP
 descriptions without boundary cells. Seven chain
 configuration tests cover relative BSDL paths, strict JSON validation, TAPs

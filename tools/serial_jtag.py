@@ -195,7 +195,7 @@ def add_instruction_command(name, help_text):
 
 
 for _name, _help in (
-        ('idcode', 'Read and validate target IDCODE using BSDL.'),
+        ('idcode', 'Read and validate IDCODE; show hex, version, device number and vendor.'),
         ('bypass', 'Put all TAPs in BYPASS.'),
         ('sample', 'Capture the target boundary register; leave output-test mode.'),
         ('preload', 'Load the retained output vector without activating EXTEST.'),

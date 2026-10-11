@@ -124,7 +124,7 @@ All connection/configuration options precede the first subcommand.
 | --- | --- |
 | `targets` | Lists configured TAPs and marks the current target. |
 | `target NAME` | Selects a target without changing hardware state. |
-| `idcode` | Reads the target IDCODE, checks all non-X bits against BSDL, prints hexadecimal. |
+| `idcode` | Reads the target IDCODE, checks all non-X bits against BSDL, prints hex and decoded version, device number and vendor. |
 | `bypass` | Selects BYPASS on the whole chain; normal device control resumes. |
 | `sample` | Selects SAMPLE and returns the target's captured boundary bits, lowest cell index first. Explicitly leaves EXTEST/INTEST. |
 | `preload` | Loads the retained output vector with PRELOAD, leaving active output-test mode. |
@@ -140,6 +140,41 @@ connected target. An unsupported instruction, unknown pin or unsupported cell
 layout produces an error instead of guessing an opcode or cell mapping.
 STM32's supplied BSDL does not contain INTEST. SAMPLE and PRELOAD have the same
 opcode; files naming that opcode `SAMPLE/PRELOAD` are also supported.
+
+`idcode` preserves the raw hexadecimal value on the first line and decodes the
+captured value below it, for example for the Debug TAP:
+
+```text
+0x4BA00477
+  Version: 4 (0x4)
+  Device number: 0xBA00
+  Vendor: Arm (0x23B)
+```
+
+Version is bits 31:28, device number (part number) is bits 27:12, and vendor
+is the full 11-bit manufacturer code in bits 11:1. Masked `X` bits in the BSDL
+are still decoded from the actual capture. Vendor names currently cover
+STMicroelectronics (`0x020`) and Arm (`0x23B`); other codes print `Unknown`
+alongside their numeric value. The device number identifies the TAP's part,
+not necessarily the complete microcontroller model. The same output is used
+in batches and interactive sessions, after successful BSDL validation.
+
+Vendor names are stored in [data/jtag_vendors.json](data/jtag_vendors.json):
+
+```json
+{
+  "0x020": "STMicroelectronics",
+  "0x23B": "Arm"
+}
+```
+
+To extend the table, add a full 11-bit manufacturer code as `0x` followed by
+three hexadecimal digits (range `0x000`–`0x7FF`) and a nonempty name. Duplicate
+codes are rejected, including different letter cases. The file is loaded once
+per process relative to the Python module, regardless of the working directory;
+restart the CLI after editing it. If it is missing or invalid, the client prints
+one warning to stderr and continues with `Unknown` and the numeric vendor code.
+IDCODE validation and decoding do not depend on vendor names.
 
 For example, in a BSDL-configured shell:
 

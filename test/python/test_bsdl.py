@@ -2,9 +2,13 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+import io
+import os
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
-from jtag_bsdl import Bsdl, BoundarySession, load_chain
+from jtag_bsdl import Bsdl, BoundarySession, load_chain, format_idcode
+from jtag_bsdl import load_vendors
 
 FIXTURE = Path(__file__).parent / 'fixtures/boundary.bsdl'
 TEXT = FIXTURE.read_text()
@@ -27,6 +31,50 @@ class Transport:
 
 
 class BsdlTests(unittest.TestCase):
+    def test_vendor_table_is_independent_of_cwd_and_cached(self):
+        load_vendors.cache_clear()
+        self.addCleanup(load_vendors.cache_clear)
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                self.assertIn('Vendor: Arm (0x23B)', format_idcode(0x4BA00477))
+                with patch('pathlib.Path.read_text', side_effect=AssertionError('reloaded')):
+                    self.assertIn('STMicroelectronics', format_idcode(0x06413041))
+            finally:
+                os.chdir(previous)
+
+    def test_missing_or_invalid_vendor_table_preserves_numeric_output(self):
+        self.addCleanup(load_vendors.cache_clear)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'vendors.json'
+            for contents in [None, '{', '[]', '{"0x800":"bad"}',
+                             '{"0x020":""}', '{"0x020":1}',
+                             '{"0x23B":"A","0x23b":"B"}',
+                             '{"0x020":"A","0x020":"B"}']:
+                with self.subTest(contents=contents):
+                    if contents is not None:
+                        path.write_text(contents)
+                    load_vendors.cache_clear()
+                    stderr = io.StringIO()
+                    with patch('jtag_bsdl.VENDORS_PATH', path), patch('sys.stderr', stderr):
+                        for _ in range(2):
+                            result = format_idcode(0x4BA00477)
+                            self.assertIn('0x4BA00477', result)
+                            self.assertIn('Vendor: Unknown (0x23B)', result)
+                    self.assertEqual(1, stderr.getvalue().count('Warning:'))
+
+    def test_idcode_decoded_fields(self):
+        self.assertEqual('0x06413041\n  Version: 0 (0x0)\n'
+                         '  Device number: 0x6413\n  Vendor: STMicroelectronics (0x020)',
+                         format_idcode(0x06413041))
+        self.assertEqual('0x4BA00477\n  Version: 4 (0x4)\n'
+                         '  Device number: 0xBA00\n  Vendor: Arm (0x23B)',
+                         format_idcode(0x4BA00477))
+        self.assertEqual('0xFFFFFFFF\n  Version: 15 (0xF)\n'
+                         '  Device number: 0xFFFF\n  Vendor: Unknown (0x7FF)',
+                         format_idcode(0xFFFFFFFF))
+
     def test_debug_idcode_and_bypass_without_boundary(self):
         model = Bsdl(DEBUG_TEXT)
         self.assertEqual(0, model.boundary_length)
@@ -35,7 +83,7 @@ class BsdlTests(unittest.TestCase):
             transport = Transport()
             transport.reply = f'{value:032b}'[::-1] + '0'
             session = BoundarySession(transport, model, [5, 4], 1)
-            self.assertEqual(f'0x{value:08X}', session.command('idcode'))
+            self.assertEqual(f'0x{value:08X}', session.command('idcode').splitlines()[0])
             self.assertEqual([('reset',), ('ir', '011111111'), ('dr', '0' * 33)], transport.calls)
             session.command('bypass')
             self.assertEqual(('ir', '111111111'), transport.calls[-1])
@@ -85,7 +133,7 @@ class BsdlTests(unittest.TestCase):
                 session = BoundarySession(t, self.bsdl, lengths, target)
                 offset = len(lengths) - target - 1
                 t.reply = '0' * offset + f'{0x16413041:032b}'[::-1] + '0' * target
-                self.assertEqual('0x16413041', session.command('idcode'))
+                self.assertEqual('0x16413041', session.command('idcode').splitlines()[0])
                 expected = ''.join('10000' if i == target else '1' * lengths[i]
                                    for i in reversed(range(len(lengths))))
                 self.assertEqual(('ir', expected), t.calls[1])

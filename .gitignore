@@ -41,3 +41,8 @@ include/version.hpp
 doc/BufferStructure.drawio
 doc/*.bkp
 doc/*.dtmp
+
+# Python CLI environment and bytecode
+.venv/
+__pycache__/
+*.py[cod]

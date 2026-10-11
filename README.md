@@ -437,8 +437,11 @@ BSDL is **not bundled**: save it at
 path. Relative paths are resolved from the JSON file's directory. Hold target
 NRST LOW externally for boundary-scan operations.
 The Debug TAP uses the bundled minimal `ARM_JTAG_DP.bsd` description, allowing
-`target debug` followed by `idcode`. It supports IDCODE/BYPASS, not pin or memory
-operations.
+`target debug` followed by `idcode`. Its `stm32f4-adiv5` protocol profile also
+provides `dap-init`, DP/AP register access and `mem-read32`/`mem-write32`.
+Release NRST for DAP operations; the CLI does not automatically halt the CPU.
+Register metadata lives in JSON separately from the Python exchange logic.
+See [DAP commands and limitations](tools/README.md#arm-dap-registers-and-memory).
 
 ```sh
 python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.json shell

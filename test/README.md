@@ -30,6 +30,7 @@ test/
 │   ├── test_serial_jtag.py
 │   ├── test_bsdl.py
 │   ├── test_chain_config.py
+│   ├── test_dap.py
 │   └── fixtures/
 │       └── boundary.bsdl
 ├── profiles/
@@ -109,9 +110,9 @@ After installing `tools/requirements.txt` into a Python virtual environment:
 python -m unittest discover -s test/python -v
 ```
 
-The Python suite contains forty-eight tests: five exercise the real pySerialTransfer
+The Python suite contains fifty-eight tests: five exercise the real pySerialTransfer
 encoder/parser over an in-memory connection, including CRC failures and
-uncertain-execution timeouts; seventeen use Click CliRunner to check argument
+uncertain-execution timeouts; nineteen use Click CliRunner to check argument
 validation, chained subcommands, command-specific help without opening a port,
 explicit interactive sessions, EOF, interrupts, port cleanup and BSDL-backed
 command sequences. Nineteen additional BSDL tests cover parsing, malformed
@@ -122,7 +123,12 @@ unsupported cells, shared controls, limits, failure invalidation and Debug TAP
 descriptions without boundary cells. Seven chain
 configuration tests cover relative BSDL paths, strict JSON validation, TAPs
 without BSDL, switching between Boundary and Debug IDCODEs, retained vectors and chain-wide
-invalidation. They are separate from the 66 C++ tests and
+invalidation. Eight DAP tests use a behavioral transport with a fixed register
+map and delayed responses to check power-up, AP bank selection, memory write/read
+and restoration, WAIT without replaying accepted writes, sticky errors, invalid
+ACKs, timeouts, disconnection, limits, profile validation and state invalidation.
+The CLI tests also cover DAP batch/shell execution and numeric argument validation.
+They are separate from the 66 C++ tests and
 need no physical board. See the [adapter guide](../include/protocol/README.md).
 
 `python/fixtures/boundary.bsdl` is a synthetic test fixture, not the STM32

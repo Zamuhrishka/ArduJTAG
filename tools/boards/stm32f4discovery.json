@@ -14,7 +14,8 @@
     },
     {
       "name": "debug",
-      "bsdl": "./bsdl/ARM_JTAG_DP.bsd"
+      "bsdl": "./bsdl/ARM_JTAG_DP.bsd",
+      "protocol": "stm32f4-adiv5"
     }
   ],
   "default_target": "boundary"

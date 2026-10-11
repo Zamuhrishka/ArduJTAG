@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "name": "STM32F405/415/407/417 ADIv5 JTAG-DP and AHB-AP",
+  "sources": [
+    {"document": "Arm IHI 0031F, ADIv5.2", "sections": "JTAG-DP; DP register descriptions; MEM-AP register descriptions", "url": "https://developer.arm.com/documentation/ihi0031/f/"},
+    {"document": "ST RM0090 Rev 21", "sections": "38.7 JTAG-DP; 38.9 AHB-AP", "url": "https://www.st.com/resource/en/reference_manual/rm0090-stm32f4xx-reference-manual-stmicroelectronics.pdf"}
+  ],
+  "ir_length": 4,
+  "instructions": {"IDCODE": 14, "BYPASS": 15, "DPACC": 10, "APACC": 11, "ABORT": 8},
+  "ack": {"WAIT": 1, "OK_FAULT": 2},
+  "dp": {
+    "CTRL_STAT": {"address": 4, "bank": 0, "access": "RW", "fields": {
+      "ORUNDETECT": {"lsb": 0, "width": 1, "access": "RW"},
+      "STICKYORUN": {"lsb": 1, "width": 1, "access": "W1C"},
+      "STICKYCMP": {"lsb": 4, "width": 1, "access": "W1C"},
+      "STICKYERR": {"lsb": 5, "width": 1, "access": "W1C"},
+      "CDBGPWRUPREQ": {"lsb": 28, "width": 1, "access": "RW"},
+      "CDBGPWRUPACK": {"lsb": 29, "width": 1, "access": "RO"},
+      "CSYSPWRUPREQ": {"lsb": 30, "width": 1, "access": "RW"},
+      "CSYSPWRUPACK": {"lsb": 31, "width": 1, "access": "RO"}
+    }},
+    "SELECT": {"address": 8, "bank": 0, "access": "RW", "fields": {
+      "APBANKSEL": {"lsb": 4, "width": 4, "access": "RW"},
+      "APSEL": {"lsb": 24, "width": 8, "access": "RW"}
+    }},
+    "RDBUFF": {"address": 12, "bank": 0, "access": "RO", "fields": {}}
+  },
+  "ap": {
+    "CSW": {"address": 0, "bank": 0, "access": "RW", "fields": {
+      "SIZE": {"lsb": 0, "width": 3, "access": "RW"},
+      "ADDRINC": {"lsb": 4, "width": 2, "access": "RW"},
+      "DEVICEEN": {"lsb": 6, "width": 1, "access": "RO"},
+      "PROT": {"lsb": 24, "width": 4, "access": "RW"},
+      "MASTERTYPE": {"lsb": 29, "width": 1, "access": "RW"}
+    }},
+    "TAR": {"address": 4, "bank": 0, "access": "RW", "fields": {}},
+    "DRW": {"address": 12, "bank": 0, "access": "RW", "fields": {}},
+    "IDR": {"address": 12, "bank": 15, "access": "RO", "fields": {
+      "TYPE": {"lsb": 0, "width": 4, "access": "RO"},
+      "CLASS": {"lsb": 13, "width": 4, "access": "RO"}
+    }}
+  },
+  "memory": {
+    "default_ap": 0,
+    "idr_fields": {"CLASS": 8, "TYPE": 1},
+    "csw_fields": {"SIZE": 2, "ADDRINC": 0, "PROT": 3, "MASTERTYPE": 1}
+  }
+}

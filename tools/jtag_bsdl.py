@@ -360,6 +360,7 @@ class TapConfig:
     ir_length: int
     bsdl: object = None
     aliases: object = None
+    dap: object = None
 
 
 @dataclass(frozen=True)
@@ -389,8 +390,8 @@ def load_config(path):
         raise ValueError('taps must be a nonempty array in TDI-to-TDO order')
     taps, names = [], set()
     for tap in data['taps']:
-        if not isinstance(tap, dict) or set(tap) - {'name', 'bsdl', 'ir_length', 'aliases'}:
-            raise ValueError('TAP expects name, bsdl or ir_length, and optional aliases')
+        if not isinstance(tap, dict) or set(tap) - {'name', 'bsdl', 'ir_length', 'aliases', 'protocol'}:
+            raise ValueError('TAP expects name, bsdl or ir_length, and optional aliases/protocol')
         name = tap.get('name')
         if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', name) or name in names:
             raise ValueError('TAP names must be unique identifiers (letters, digits, _ and -)')
@@ -424,7 +425,21 @@ def load_config(path):
             if any(k in ports and k != v for k, v in normalized.items()):
                 raise ValueError(f'{name}: aliases may not redefine BSDL port names')
             aliases = normalized
-        taps.append(TapConfig(name, width, profile, aliases))
+        dap = None
+        if 'protocol' in tap:
+            if tap['protocol'] != 'stm32f4-adiv5':
+                raise ValueError(f'{name}: unsupported protocol (expected stm32f4-adiv5)')
+            from jtag_dap import DapProfile
+            dap = DapProfile()
+            if not profile or width != dap.data['ir_length']:
+                raise ValueError(f'{name}: DAP requires a matching four-bit BSDL with IDCODE')
+            for instruction, register in [('IDCODE', 'DEVICE_ID'), ('BYPASS', 'BYPASS')]:
+                expected = f'{dap.data["instructions"][instruction]:04b}'[::-1]
+                if profile.instruction(instruction, register) != expected:
+                    raise ValueError(f'{name}: BSDL instruction does not match DAP profile')
+            if profile.id_pattern is None:
+                raise ValueError(f'{name}: DAP requires BSDL IDCODE_REGISTER')
+        taps.append(TapConfig(name, width, profile, aliases, dap))
     default = data.get('default_target', taps[0].name)
     if not isinstance(default, str) or default not in names:
         raise ValueError('default_target must name a configured TAP')
@@ -470,10 +485,16 @@ class ChainSession:
         self.sessions = [BoundarySession(_TapTransport(self, i), tap.bsdl,
                                          self.lengths, i, tap.aliases) if tap.bsdl else None
                          for i, tap in enumerate(config.taps)]
+        from jtag_dap import ArmJtagDp
+        self.daps = [ArmJtagDp(self.sessions[i], tap.dap) if tap.dap else None
+                     for i, tap in enumerate(config.taps)]
         self.ready = False
 
     def invalidate(self):
         self.ready = False
+        for dap in self.daps:
+            if dap is not None:
+                dap.invalidate()
         for session in self.sessions:
             if session is not None:
                 session.invalidate()
@@ -493,6 +514,20 @@ class ChainSession:
             return self.client.command(name, *args)
         if name in ('info', 'speed'):
             return self.client.command(name, *args)
+        from jtag_dap import COMMANDS
+        if name in COMMANDS:
+            dap = self.daps[self.target]
+            if dap is None:
+                raise ValueError('selected TAP has no DAP protocol; configure protocol: stm32f4-adiv5')
+            try:
+                return dap.command(name, *args)
+            except (RuntimeError, OSError):
+                self.invalidate()
+                raise
+        # A non-DAP scan may change the active instruction or pipeline.
+        for dap in self.daps:
+            if dap is not None:
+                dap.invalidate()
         if name == 'bypass':
             transport = _TapTransport(self, self.target)
             if not self.ready:

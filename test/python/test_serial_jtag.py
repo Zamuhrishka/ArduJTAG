@@ -123,6 +123,37 @@ class ClientTests(unittest.TestCase):
 
 
 class ClickTests(unittest.TestCase):
+    def test_dap_batch_and_shell_share_initialized_session(self):
+        from test_dap import DapTransport
+        from test_bsdl import DEBUG_TEXT
+        transport = DapTransport()
+        self.client.limits = transport.limits
+        self.client.command.side_effect = transport.command
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'debug.bsd').write_text(DEBUG_TEXT)
+            config = root / 'chain.json'
+            config.write_text(json.dumps({'version': 1, 'taps': [
+                {'name': 'boundary', 'ir_length': 5},
+                {'name': 'debug', 'bsdl': 'debug.bsd', 'protocol': 'stm32f4-adiv5'}]}))
+            result = self.runner.invoke(module.main, ['--port', 'COM5', '--config', str(config),
+                'target', 'debug', 'dap-init', 'dp-read', 'CTRL_STAT', 'ap-read', '0', 'IDR',
+                'mem-write32', '0x20000000', '0xA5A55A5A', 'shell'],
+                input='mem-read32 0x20000000\nap-write 0 TAR 0x20000000\nbypass\nquit\n')
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn('DAP ready', result.output)
+        self.assertIn('0x24770011', result.output)
+        self.assertIn('0xA5A55A5A', result.output)
+        self.factory.assert_called_once()
+        self.link.close.assert_called_once()
+
+    def test_invalid_dap_numbers_fail_before_open(self):
+        for args in [('mem-read32', '1'), ('mem-write32', '0', '0x100000000'),
+                     ('dp-write', 'SELECT', 'invalid'), ('ap-read', '256', 'IDR')]:
+            result = self.runner.invoke(module.main, ['--port', 'COM5', *args])
+            self.assertEqual(2, result.exit_code, result.output)
+        self.factory.assert_not_called()
+
     def use_patch(self, patcher):
         result = patcher.start()
         self.addCleanup(patcher.stop)

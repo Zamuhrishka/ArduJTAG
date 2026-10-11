@@ -53,8 +53,10 @@ for command-specific help. Help and invalid command syntax do not open the
 serial port. Bit strings use `fromBits()` order (leftmost bit first).
 BSDL-based instructions and pin commands are available through `--config`
 (full chain) or `--bsdl` (single TAP); see
-the [Python client guide](../../tools/README.md). DAP/memory commands are not
-implemented in the client.
+the [Python client guide](../../tools/README.md). With `protocol: stm32f4-adiv5`
+on the Debug TAP, the client also provides DP/AP registers and single-word memory
+access; see [DAP commands](../../tools/README.md#arm-dap-registers-and-memory).
+These use the existing IR/DR wire commands and require no firmware update.
 
 ## Interactive mode (explicit opt-in)
 

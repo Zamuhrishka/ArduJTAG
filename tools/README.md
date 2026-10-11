@@ -86,8 +86,9 @@ uses the bundled [ARM_JTAG_DP.bsd](boards/bsdl/ARM_JTAG_DP.bsd) for `debug`:
 This is a minimal ArduJTAG description for the STM32F4 ARM JTAG-DP, not a
 complete IEEE-conformant BSDL or a manufacturer's model. It declares IDCODE
 (`1110`) and BYPASS (`1111`), with expected IDCODE `0x?BA00477` (version ignored).
-It has no boundary register and does not implement ARM DAP register or memory
-access. Other debug implementations may require different IDCODE metadata.
+It has no boundary register. DAP register and memory access is provided by the
+separate `stm32f4-adiv5` protocol profile enabled in the supplied board JSON.
+Other debug implementations may require different IDCODE and protocol metadata.
 Only the STM32 Boundary TAP's manufacturer BSDL must be supplied separately.
 
 Choose a TAP by name, either in a batch or inside the shell:
@@ -302,6 +303,83 @@ python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.j
 ```
 
 These are expected hardware results, not a record of completed board testing.
+
+## ARM DAP registers and memory
+
+The supplied STM32F4DISCOVERY config enables a target-specific ADIv5 driver:
+
+```json
+{"name": "debug", "bsdl": "./bsdl/ARM_JTAG_DP.bsd", "protocol": "stm32f4-adiv5"}
+```
+
+Register addresses, banks, bit fields and access types live in
+[stm32f4_adiv5.json](data/dap/stm32f4_adiv5.json), with sources and format
+described in the [profile guide](data/dap/README.md). The profile is loaded and
+checked before connecting. BSDL describes the TAP; the protocol profile adds
+DP/AP semantics. A four-bit BSDL with matching IDCODE/BYPASS opcodes is required.
+
+For DAP operations, **release target NRST** and disconnect other active debug
+probes. Start the shell as above, then:
+
+```text
+target debug
+dap-init
+dp-read CTRL_STAT
+ap-read 0 IDR
+mem-read32 0x20000000
+```
+
+`dap-init` checks Debug IDCODE, clears JTAG sticky errors, requests debug/system
+power, and waits for both acknowledgements. It does not halt or resume the CPU.
+
+| Command | Behavior |
+| --- | --- |
+| `dap-init` | Initializes the selected DAP before register/memory operations. |
+| `dp-read REGISTER` | Reads a named DP register: CTRL_STAT, SELECT or RDBUFF. |
+| `dp-write REGISTER VALUE` | Writes a writable DP register, then checks status. |
+| `ap-read AP REGISTER` | Selects AP and bank, reads CSW, TAR, DRW or IDR, checks status. |
+| `ap-write AP REGISTER VALUE` | Writes a writable AP register and checks status. |
+| `mem-read32 [--ap N] ADDRESS` | Reads one aligned 32-bit word; default AP is 0 from the profile. |
+| `mem-write32 [--ap N] ADDRESS VALUE` | Writes one aligned 32-bit word. |
+
+Addresses and values accept decimal or `0x` hexadecimal; AP indices are decimal
+0..255. Register names are case-insensitive. Put command options before their
+positional arguments when chaining commands. RDBUFF has JTAG-DP pipeline
+semantics; it is not an arbitrary memory register.
+
+For a write/read test, reserve a RAM word that running firmware and DMA do not
+use. For example, **only if `0x20000000` is reserved for this test**, read and
+record its original value, then run:
+
+```text
+mem-write32 0x20000000 0xA5A55A5A
+mem-read32 0x20000000
+```
+
+Expect `0xA5A55A5A`; restore the recorded original value with `mem-write32` and
+read it back. The CLI does not automatically reserve RAM, halt the CPU or
+restore writes. Do not use an arbitrary firmware-owned address for this test.
+Finish with `bypass` and `quit`. BYPASS does not undo memory writes or DAP power
+requests.
+
+Related commands can run in one connection:
+
+```sh
+python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.json target debug dap-init ap-read 0 IDR mem-read32 0x20000000 bypass
+```
+
+Raw reset/IR/DR/clocks and non-DAP high-level scans invalidate DAP initialization;
+run `dap-init` again afterward. Merely choosing a target or querying info/speed
+does not invalidate it. Explicit CTRL_STAT writes also require reinitialization.
+WAIT polling is bounded to 100 attempts, as is power-up polling. Faults, invalid
+ACKs and uncertain communication stop the session and invalidate chain state;
+accepted writes are never automatically replayed. Memory commands check MEM-AP
+class/type and verify the requested CSW configuration before accessing memory.
+
+Only single aligned words on the STM32F4 ADIv5 JTAG-DP/AHB-AP combination are
+supported initially. SWD, ADIv6, block transfers, flash programming and CPU
+halt/resume commands are not implemented. Arduino firmware and the serial wire
+protocol are unchanged. Validation uses a simulated DP/AP, not physical hardware.
 
 ## Parser scope
 

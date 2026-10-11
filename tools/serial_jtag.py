@@ -188,6 +188,59 @@ def clocks_command(tms, tdi):
 
 
 # Flat commands work both with Click chain=True and inside shell.
+def dap_number(ctx, param, value):
+    from jtag_dap import uint
+    try:
+        return uint(value)
+    except ValueError as error:
+        raise click.BadParameter(str(error)) from error
+
+
+def add_dap_register_command(space, write):
+    name = f'{space}-{"write" if write else "read"}'
+
+    def operation(**kwargs):
+        args = [kwargs['register']]
+        if space == 'ap':
+            args.insert(0, kwargs['ap'])
+        if write:
+            args.append(kwargs['value'])
+        return (name, *args)
+
+    if write:
+        operation = click.argument('value', callback=dap_number)(operation)
+    operation = click.argument('register')(operation)
+    if space == 'ap':
+        operation = click.argument('ap', type=click.IntRange(0, 255))(operation)
+    main.command(name, help=f'{"Write" if write else "Read"} a named {space.upper()} register; requires dap-init.')(operation)
+
+
+for _space in ('dp', 'ap'):
+    for _write in (False, True):
+        add_dap_register_command(_space, _write)
+
+
+@main.command('mem-read32')
+@click.argument('address', callback=dap_number)
+@click.option('--ap', type=click.IntRange(0, 255), help='AP index (default: profile setting, STM32F4 AP0).')
+def mem_read_command(address, ap):
+    """Read an aligned 32-bit word through AHB-AP; requires dap-init."""
+    if address % 4:
+        raise click.BadParameter('address must be aligned to four bytes')
+    return ('mem-read32', address, ap)
+
+
+@main.command('mem-write32')
+@click.argument('address', callback=dap_number)
+@click.argument('value', callback=dap_number)
+@click.option('--ap', type=click.IntRange(0, 255), help='AP index (default: profile setting, STM32F4 AP0).')
+def mem_write_command(address, value, ap):
+    """Write an aligned 32-bit word through AHB-AP; requires dap-init."""
+    if address % 4:
+        raise click.BadParameter('address must be aligned to four bytes')
+    return ('mem-write32', address, value, ap)
+
+
 def add_instruction_command(name, help_text):
     @main.command(name, help=help_text)
     def instruction_command():
@@ -195,6 +248,7 @@ def add_instruction_command(name, help_text):
 
 
 for _name, _help in (
+        ('dap-init', 'Validate Debug IDCODE, clear sticky errors and request DAP power; release NRST.'),
         ('idcode', 'Read and validate IDCODE; show hex, version, device number and vendor.'),
         ('bypass', 'Put all TAPs in BYPASS.'),
         ('sample', 'Capture the target boundary register; leave output-test mode.'),

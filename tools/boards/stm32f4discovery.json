@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "taps": [
+    {
+      "name": "boundary",
+      "bsdl": "./bsdl/STM32F405_415_407_417_LQFP100.bsd",
+      "aliases": {
+        "USER": "PA0",
+        "LD4": "PD12",
+        "LD3": "PD13",
+        "LD5": "PD14",
+        "LD6": "PD15"
+      }
+    },
+    {"name": "debug", "ir_length": 4}
+  ],
+  "default_target": "boundary"
+}

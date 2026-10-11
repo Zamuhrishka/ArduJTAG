@@ -1,0 +1,269 @@
+# Python JTAG client
+
+Install `requirements.txt` into a Python virtual environment and flash the
+SerialTransfer adapter (`pio run -e nano_serial -t upload`). Run commands from
+the repository root. See the [wire protocol guide](../include/protocol/README.md)
+for wiring, raw commands and adapter limitations.
+
+## JSON chain configuration
+
+Use `--config FILE` to describe the complete chain. The `taps` array is in
+physical **TDI-to-TDO order**. Each TAP has a unique, case-sensitive name and
+either a BSDL file or a manually specified IR length:
+
+```json
+{
+  "version": 1,
+  "taps": [
+    {
+      "name": "boundary",
+      "bsdl": "./bsdl/STM32F405_415_407_417_LQFP100.bsd",
+      "aliases": {"USER": "PA0", "LD4": "PD12"}
+    },
+    {"name": "debug", "ir_length": 4}
+  ],
+  "default_target": "boundary"
+}
+```
+
+BSDL paths are relative to the JSON file, not the current working directory.
+Absolute paths are also supported. IR length is derived from BSDL; an explicit
+`ir_length` alongside BSDL must match it. A TAP without BSDL participates in
+standard all-ones, one-bit BYPASS but cannot use IDCODE or pin commands.
+`default_target` defaults to the first TAP if omitted. Aliases are scoped to
+each TAP; BSDL port names and aliases are case-insensitive.
+
+All BSDL files are loaded before opening the serial port. Missing files,
+unknown fields, duplicate JSON keys/TAP names, invalid targets and inconsistent
+IR lengths fail explicitly. TAP names start with a letter and contain letters,
+digits, `_` or `-`. There is no automatic chain discovery. All non-target TAPs
+must implement all-ones BYPASS with a one-bit DR.
+
+For STM32F4DISCOVERY use the supplied
+[configuration](boards/stm32f4discovery.json). Save the manufacturer's BSDL at
+`tools/boards/bsdl/STM32F405_415_407_417_LQFP100.bsd`, or edit that configuration's
+path to point to your copy. The BSDL is not bundled; the test fixtures are
+synthetic and must not be used on hardware.
+
+Before running the commands below, create the `tools/boards/bsdl` directory
+and save the complete manufacturer's BSDL there as a plain-text `.bsd` file.
+The expected layout is:
+
+```text
+tools/boards/
+├── stm32f4discovery.json
+└── bsdl/
+    └── STM32F405_415_407_417_LQFP100.bsd
+```
+
+Alternatively, edit the `boundary` TAP's `bsdl` field to use your existing copy,
+for example on Windows:
+
+```json
+"bsdl": "C:/Users/yourname/Documents/STM32F405_415_407_417_LQFP100.bsd"
+```
+
+Forward slashes work in Windows JSON paths; backslashes must be escaped as
+`\\`. A `cannot load BSDL ... No such file or directory` error means that this
+file is missing or the configured path is wrong. For the supplied JSON,
+`./bsdl/...` resolves to `tools/boards/bsdl/...`, not a `bsdl` directory at the
+repository root. No serial connection is opened when BSDL loading fails.
+
+```sh
+python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.json idcode
+python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.json shell
+```
+
+The configuration includes USER/PA0 and LD4/PD12, LD3/PD13, LD5/PD14, LD6/PD15.
+It describes the Boundary TAP with IR5 and Debug TAP with IR4. It does not
+provide a Debug TAP BSDL or implement ARM DAP registers.
+
+Choose a TAP by name, either in a batch or inside the shell:
+
+```text
+jtag> targets
+jtag> target boundary
+jtag> idcode
+jtag> pin-read USER
+```
+
+`target NAME` only selects the host-side target; it generates no clocks and
+leaves active instructions unchanged. The next high-level scan puts all other
+TAPs in BYPASS, releasing any of their active EXTEST/INTEST modes. Each described
+TAP retains its own output vector. Returning to EXTEST on a previously bypassed
+TAP performs PRELOAD again before activating that vector. Raw operations or a
+communication failure invalidate the mode/vector knowledge for the whole chain.
+
+`--config` cannot be combined with `--bsdl`, `--chain`, `--target` or the legacy
+`--chain-config` option. For a single TAP, `--bsdl target.bsd` remains a shorthand
+and names the TAP `tap0`. Legacy `--bsdl target.bsd --chain 5,4 --target 0` and
+the old `--chain-config` format (`ir_lengths`, numeric `target`, `aliases`) are
+also accepted, with generated names `tap0`, `tap1`, etc. New board files should
+use the versioned `taps` format and `--config`.
+
+The parser reads literal INSTRUCTION_LENGTH, INSTRUCTION_OPCODE,
+REGISTER_ACCESS, IDCODE_REGISTER, BOUNDARY_LENGTH, BOUNDARY_REGISTER and
+COMPLIANCE_PATTERNS attributes on the computer; BSDL is not sent to Arduino.
+All connection/configuration options precede the first subcommand.
+
+## High-level commands
+
+| Command | Behavior |
+| --- | --- |
+| `targets` | Lists configured TAPs and marks the current target. |
+| `target NAME` | Selects a target without changing hardware state. |
+| `idcode` | Reads the target IDCODE, checks all non-X bits against BSDL, prints hexadecimal. |
+| `bypass` | Selects BYPASS on the whole chain; normal device control resumes. |
+| `sample` | Selects SAMPLE and returns the target's captured boundary bits, lowest cell index first. Explicitly leaves EXTEST/INTEST. |
+| `preload` | Loads the retained output vector with PRELOAD, leaving active output-test mode. |
+| `extest` | Preloads the retained vector before first selecting EXTEST, then scans it. |
+| `intest` | Same preparation for INTEST; returns captured boundary bits. Requires BSDL support. |
+| `pin-read NAME` | Captures one INPUT cell; prints 0 or 1. Uses SAMPLE normally, preserves an already active EXTEST/INTEST mode. |
+| `pin-write NAME 0\|1` | Sets one OUTPUT3 value, enables its driver and enters EXTEST through PRELOAD when needed. |
+| `pin-disable NAME` | Applies the BSDL disable value to that pin's control cell through EXTEST. |
+
+The first high-level operation automatically resets TAP to Idle. IDCODE checking
+is explicit: run `idcode` first to check that the selected BSDL matches the
+connected target. An unsupported instruction, unknown pin or unsupported cell
+layout produces an error instead of guessing an opcode or cell mapping.
+STM32's supplied BSDL does not contain INTEST. SAMPLE and PRELOAD have the same
+opcode; files naming that opcode `SAMPLE/PRELOAD` are also supported.
+
+For example, in a BSDL-configured shell:
+
+```text
+jtag> idcode
+jtag> pin-read USER
+jtag> pin-write LD4 1
+jtag> pin-write LD3 1
+jtag> pin-read USER
+jtag> pin-write LD4 0
+jtag> pin-disable LD3
+jtag> bypass
+jtag> quit
+```
+
+The two LED writes retain each other's values. Reading USER while in EXTEST
+captures input without replacing the intended output vector with the returned
+scan data. The initial vector sets internal cells to their declared safe
+values, chooses 0 for X data bits, and disables all described output drivers.
+PRELOAD loads the complete vector before EXTEST/INTEST can activate it.
+
+For the STM32 BSDL above, hold **target NRST LOW externally** throughout boundary
+scan. The CLI displays COMPLIANCE_PATTERNS but cannot electrically enforce it;
+adapter nTRST is a different signal. Device-specific mode/timing requirements
+are not inferred from arbitrary VHDL packages or design warnings.
+
+Pin writes control boundary cells, not firmware GPIO registers. Output state is
+retained only within the current CLI session. Explicit `sample`, `preload`,
+`idcode` or `bypass` changes the selected instruction; BYPASS restores normal
+pin control rather than guaranteeing the last BSR levels. Closing the port or
+leaving the shell does **not** issue BYPASS automatically. Finish with `bypass`
+when you want to release boundary control.
+
+Raw `reset`, `ir`, `dr` and `clocks` invalidate the host's mode/vector knowledge.
+The next high-level operation resets and starts from the disabled-output vector.
+Transmission failure invalidates state and terminates the session; there are no
+automatic write retries. The protocol still checks the combined chain length:
+512 IR/DR bits, including BYPASS padding, with the current adapter firmware.
+
+## STM32F4DISCOVERY hardware checks
+
+Flash the SerialTransfer adapter, install `tools/requirements.txt`, and prepare
+the BSDL file as described above. Close Serial Monitor and other programs using
+the serial port. Keep **target NRST LOW externally throughout these checks**
+(for example, hold the target RESET button); nTRST is a separate signal.
+
+Run from the repository root, replacing `COM5` with your adapter's port:
+
+```sh
+python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.json shell
+```
+
+Enter one command per line. Start by checking the selected target:
+
+```text
+targets
+target boundary
+idcode
+```
+
+The list contains `boundary` and `debug`. Boundary IDCODE should match
+`0x06413041` under mask `0x0FFFFFFF`; the version nibble may differ. The client
+checks this against the BSDL. The configured `debug` TAP has no BSDL, so its
+high-level `idcode` and pin operations are unavailable.
+
+Read USER without pressing it, then hold USER and repeat:
+
+```text
+pin-read USER
+```
+
+Expect `0` when released and `1` while pressed. Each command captures once;
+there is no continuous polling.
+
+Turn on the LEDs one at a time, observing the board between commands:
+
+```text
+pin-write LD4 1
+pin-write LD3 1
+pin-write LD5 1
+pin-write LD6 1
+pin-read USER
+```
+
+| Alias | STM32 pin | LED color |
+| --- | --- | --- |
+| LD4 | PD12 | Green |
+| LD3 | PD13 | Orange |
+| LD5 | PD14 | Red |
+| LD6 | PD15 | Blue |
+
+Previously enabled LEDs should stay on. The final input capture preserves the
+intended output values. `pin-write` performs PRELOAD before entering EXTEST;
+there is no need to issue `extest` manually.
+
+Check output disabling and turn off the remaining LEDs:
+
+```text
+pin-disable LD4
+pin-write LD3 0
+pin-write LD5 0
+pin-write LD6 0
+bypass
+quit
+```
+
+`pin-disable LD4` disables its output driver (high impedance), so the LED should
+go out. Writing `0` drives the other outputs LOW. `bypass` releases boundary
+control; `quit` alone does not do this. Release target RESET after the checks.
+
+For a one-shot IDCODE and button check, use a batch with one port opening:
+
+```sh
+python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.json idcode pin-read USER bypass
+```
+
+These are expected hardware results, not a record of completed board testing.
+
+## Parser scope
+
+This first implementation supports literal decimal widths, quoted strings
+joined with `&`, binary instruction opcodes, X-masked 32-bit IDCODEs and
+complete numbered boundary-register records (including names like `DATA(0)`).
+It is not a general VHDL/BSDL compiler: named constant expressions, opcode
+alternatives, custom register declarations and executable package semantics
+are not evaluated. Operations require the selected instruction to map to
+BOUNDARY, DEVICE_ID or BYPASS as appropriate.
+
+Boundary operations support BC_1 INPUT/OUTPUT3/CONTROL/CONTROLR/INTERNAL cells
+and BC_4 INPUT cells. OUTPUT3 must reference a control cell with a binary disable
+value and a Z result. Unsupported cell kinds/functions and undefined internal
+or control initial values are rejected. Shared controls can be initialized when
+polarities agree, but individual writes/disables on shared drivers are rejected.
+INPUT-only pins can be read; OUTPUT2, bidirectional cells and differential pin
+semantics are not implemented. IDCODE/BYPASS remain usable when boundary cell
+semantics are unsupported, provided the metadata itself parses successfully.
+
+Validation is software-only; physical operation with the STM32 board and the
+manufacturer's complete BSDL still needs verification.

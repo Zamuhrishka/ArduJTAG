@@ -1,0 +1,2 @@
+pySerialTransfer==2.6.11
+click>=8.1,<9

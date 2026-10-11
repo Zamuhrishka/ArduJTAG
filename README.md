@@ -53,7 +53,7 @@ Named commands also require their profile header, such as
 
 ## Examples
 
-The [example guide](examples/README.md) describes all eleven sketches, their output,
+The [example guide](examples/README.md) describes all twelve sketches, their output,
 target configuration and how to select and upload them:
 
 - **Direct `Jtag`:** ReadId, ReadIdSequence, EnableArmDap, ExtestLeds and ReadUserButton.
@@ -419,6 +419,32 @@ the caller's responsibility.
 
 See [ReadIdChain](examples/chain/ReadIdChain/ReadIdChain.ino) for a complete sketch.
 
+## USB / Serial control
+
+The optional [SerialTransfer adapter](include/protocol/README.md) exposes JTAG
+reset, speed, IR/DR scans and raw clock sequences over USB/Serial. Build and
+upload with `pio run -e nano_serial -t upload`; use `tools/serial_jtag.py` for
+a command or a batch of commands in one serial session. The explicit `shell`
+subcommand starts interactive mode and keeps the port open between commands.
+With `--config board.json` (or `--bsdl` for one TAP), the client also supports
+named targets, instructions and pin read/write operations; see the [BSDL and chain configuration guide](tools/README.md). The `nanoatmega328new`
+environment builds the example selected in `src/main.cpp` and also provides
+the SerialTransfer dependency for manual selection of the adapter sketch.
+
+For STM32F4DISCOVERY, use `tools/boards/stm32f4discovery.json`. The manufacturer's
+BSDL is **not bundled**: save it at
+`tools/boards/bsdl/STM32F405_415_407_417_LQFP100.bsd` or edit the JSON's `bsdl`
+path. Relative paths are resolved from the JSON file's directory. Hold target
+NRST LOW externally for boundary-scan operations.
+
+```sh
+python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.json shell
+```
+
+See the [hardware checks](tools/README.md#stm32f4discovery-hardware-checks)
+for IDCODE, USER button and LED commands, expected results and how to release
+boundary control with `bypass` before exiting.
+
 ## Internal implementation
 
 JTAG headers live under `include/jtag/` and are grouped by responsibility. Include them using their directory paths,
@@ -426,6 +452,9 @@ for example `<jtag/core/Jtag.hpp>` or `<jtag/chain/JtagChain.hpp>`.
 
 ```text
 include/
+├── protocol/
+│   ├── JtagProtocol.hpp
+│   └── SerialTransferJtag.hpp
 └── jtag/
     ├── boundary/
     │   ├── BoundaryScan.hpp
@@ -599,7 +628,7 @@ Run the Unity tests on your computer:
 pio test -e native
 ```
 
-There are **60 tests in eight modules**, each built as a separate executable:
+There are **66 tests in nine modules**, each built as a separate executable:
 
 | Module | What it checks |
 | --- | --- |
@@ -610,6 +639,7 @@ There are **60 tests in eight modules**, each built as a separate executable:
 | `chain/test_chain` | Chain ordering, BYPASS, profiles, device access and standard operations. |
 | `backends/gpio/test_gpio` | TDO sampling before the falling TCK edge and clock timing across counter boundaries. |
 | `boundary/test_boundary` | Generic vector operations, driver polarities and invalid layout/buffer handling. |
+| `protocol/test_protocol` | Serial command validation, bit packing, reset state, scan limits and response encoding. |
 | `profiles/test_stm32_profile` | STM32 BSDL instruction codes, IDCODE matching, cell mapping and full 406-bit scans. |
 
 To run only IR tests:

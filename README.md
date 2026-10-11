@@ -436,6 +436,9 @@ BSDL is **not bundled**: save it at
 `tools/boards/bsdl/STM32F405_415_407_417_LQFP100.bsd` or edit the JSON's `bsdl`
 path. Relative paths are resolved from the JSON file's directory. Hold target
 NRST LOW externally for boundary-scan operations.
+The Debug TAP uses the bundled minimal `ARM_JTAG_DP.bsd` description, allowing
+`target debug` followed by `idcode`. It supports IDCODE/BYPASS, not pin or memory
+operations.
 
 ```sh
 python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.json shell

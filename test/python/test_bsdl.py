@@ -8,6 +8,8 @@ from jtag_bsdl import Bsdl, BoundarySession, load_chain
 
 FIXTURE = Path(__file__).parent / 'fixtures/boundary.bsdl'
 TEXT = FIXTURE.read_text()
+DEBUG_TEXT = (Path(__file__).resolve().parents[2] /
+              'tools/boards/bsdl/ARM_JTAG_DP.bsd').read_text()
 
 
 class Transport:
@@ -25,6 +27,43 @@ class Transport:
 
 
 class BsdlTests(unittest.TestCase):
+    def test_debug_idcode_and_bypass_without_boundary(self):
+        model = Bsdl(DEBUG_TEXT)
+        self.assertEqual(0, model.boundary_length)
+        self.assertEqual({}, model.cells)
+        for value in (0x4BA00477, 0x2BA00477):
+            transport = Transport()
+            transport.reply = f'{value:032b}'[::-1] + '0'
+            session = BoundarySession(transport, model, [5, 4], 1)
+            self.assertEqual(f'0x{value:08X}', session.command('idcode'))
+            self.assertEqual([('reset',), ('ir', '011111111'), ('dr', '0' * 33)], transport.calls)
+            session.command('bypass')
+            self.assertEqual(('ir', '111111111'), transport.calls[-1])
+        transport.reply = f'{0x06413041:032b}'[::-1] + '0'
+        with self.assertRaisesRegex(ValueError, 'IDCODE mismatch'):
+            session.command('idcode')
+
+    def test_debug_boundary_operations_fail_without_clocks(self):
+        transport = Transport()
+        session = BoundarySession(transport, Bsdl(DEBUG_TEXT), [5, 4], 1)
+        for operation in [('sample',), ('preload',), ('extest',), ('intest',),
+                          ('pin-read', 'PA0'), ('pin-write', 'PA0', '1'), ('pin-disable', 'PA0')]:
+            with self.subTest(operation=operation), self.assertRaisesRegex(ValueError, 'no boundary-scan register'):
+                session.command(*operation)
+        self.assertEqual([], transport.calls)
+
+    def test_incomplete_boundary_metadata_is_rejected(self):
+        declarations = [
+            'attribute BOUNDARY_LENGTH of ARM_JTAG_DP : entity is 1;',
+            'attribute BOUNDARY_REGISTER of ARM_JTAG_DP : entity is "0 (BC_1, *, INTERNAL, 0)";',
+            'attribute BOUNDARY_LENGTH of ARM_JTAG_DP : entity is 0;'
+            'attribute BOUNDARY_REGISTER of ARM_JTAG_DP : entity is "";']
+        for declaration in declarations:
+            with self.subTest(declaration=declaration), self.assertRaises(ValueError):
+                Bsdl(DEBUG_TEXT.replace('end ARM_JTAG_DP;', declaration + '\nend ARM_JTAG_DP;'))
+        with self.assertRaisesRegex(ValueError, 'references BOUNDARY'):
+            Bsdl(DEBUG_TEXT.replace('DEVICE_ID (IDCODE)', 'BOUNDARY (IDCODE)'))
+
     def setUp(self):
         self.bsdl = Bsdl(TEXT)
         self.transport = Transport()

@@ -67,15 +67,22 @@ class Bsdl:
                 raise ValueError(f'{name}: only literal strings joined by & are supported')
             return ''.join(re.findall(r'"([^"]*)"', value)).upper()
 
-        def number(name):
-            value = attribute(name)
+        def number(name, optional=False):
+            value = attribute(name, optional)
+            if value is None:
+                return None
             if not re.fullmatch(r'\d+', value):
                 raise ValueError(f'{name}: expected literal integer')
             return int(value)
 
         self.ir_length = number('INSTRUCTION_LENGTH')
-        self.boundary_length = number('BOUNDARY_LENGTH')
-        if not 1 <= self.ir_length <= 512 or not 1 <= self.boundary_length <= 32767:
+        boundary_length = number('BOUNDARY_LENGTH', optional=True)
+        boundary_register = string('BOUNDARY_REGISTER', optional=True)
+        if (boundary_length is None) != (boundary_register is None):
+            raise ValueError('BOUNDARY_LENGTH and BOUNDARY_REGISTER must be provided together')
+        self.boundary_length = boundary_length if boundary_length is not None else 0
+        if not 1 <= self.ir_length <= 512 or (boundary_length is not None and
+                                               not 1 <= boundary_length <= 32767):
             raise ValueError('unsupported IR or boundary length')
         self.opcodes = {}
         for entry in split_fields(string('INSTRUCTION_OPCODE')):
@@ -94,12 +101,14 @@ class Bsdl:
                 if instruction not in self.opcodes or instruction in self.registers:
                     raise ValueError(f'invalid register access for {instruction}')
                 self.registers[instruction] = match[1]
+        if 'BOUNDARY' in self.registers.values() and boundary_length is None:
+            raise ValueError('REGISTER_ACCESS references BOUNDARY without a boundary register')
         self.id_pattern = string('IDCODE_REGISTER', optional=True)
         if self.id_pattern is not None and not re.fullmatch('[01X]{32}', self.id_pattern):
             raise ValueError('IDCODE_REGISTER must contain exactly 32 bits (0, 1 or X)')
         self.compliance = string('COMPLIANCE_PATTERNS', optional=True)
         self.cells = {}
-        for entry in split_fields(string('BOUNDARY_REGISTER')):
+        for entry in split_fields(boundary_register) if boundary_register is not None else []:
             match = re.fullmatch(r'(\d+)\s*\((.*)\)', entry, re.S)
             if not match:
                 raise ValueError(f'invalid boundary cell: {entry}')
@@ -131,6 +140,8 @@ class Bsdl:
         return self.opcodes[name]
 
     def initial_vector(self):
+        if not self.boundary_length:
+            raise ValueError(f'{self.name} has no boundary-scan register; pin and boundary operations are unavailable')
         vector = []
         for i in range(self.boundary_length):
             c = self.cells[i]

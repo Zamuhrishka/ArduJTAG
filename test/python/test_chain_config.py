@@ -6,10 +6,30 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
 from jtag_bsdl import Bsdl, TapConfig, ChainConfig, ChainSession, load_config
-from test_bsdl import TEXT, Transport
+from test_bsdl import TEXT, DEBUG_TEXT, Transport
 
 
 class ChainConfigTests(unittest.TestCase):
+    def test_switch_between_boundary_and_debug_idcodes(self):
+        (self.root / 'debug.bsd').write_text(DEBUG_TEXT)
+        self.data['taps'][1] = {'name': 'debug', 'bsdl': 'debug.bsd'}
+        transport = Transport()
+        session = ChainSession(transport, self.load())
+        transport.reply = '0' + f'{0x06413041:032b}'[::-1]
+        self.assertEqual('0x06413041', session.command('idcode'))
+        session.command('target', 'debug')
+        transport.reply = f'{0x4BA00477:032b}'[::-1] + '0'
+        self.assertEqual('0x4BA00477', session.command('idcode'))
+        self.assertEqual(('ir', '011111111'), transport.calls[-2])
+        self.assertEqual('BYPASS', session.sessions[0].mode)
+        self.assertEqual(1, transport.calls.count(('reset',)))
+        calls = list(transport.calls)
+        with self.assertRaisesRegex(ValueError, 'no boundary-scan register'):
+            session.command('extest')
+        self.assertEqual(calls, transport.calls)
+        session.command('bypass')
+        self.assertEqual(('ir', '111111111'), transport.calls[-1])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

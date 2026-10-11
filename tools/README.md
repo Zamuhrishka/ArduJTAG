@@ -53,6 +53,7 @@ The expected layout is:
 tools/boards/
 ├── stm32f4discovery.json
 └── bsdl/
+    ├── ARM_JTAG_DP.bsd
     └── STM32F405_415_407_417_LQFP100.bsd
 ```
 
@@ -75,8 +76,19 @@ python tools/serial_jtag.py --port COM5 --config tools/boards/stm32f4discovery.j
 ```
 
 The configuration includes USER/PA0 and LD4/PD12, LD3/PD13, LD5/PD14, LD6/PD15.
-It describes the Boundary TAP with IR5 and Debug TAP with IR4. It does not
-provide a Debug TAP BSDL or implement ARM DAP registers.
+It describes the Boundary TAP with IR5 and Debug TAP with IR4. The board file
+uses the bundled [ARM_JTAG_DP.bsd](boards/bsdl/ARM_JTAG_DP.bsd) for `debug`:
+
+```json
+{"name": "debug", "bsdl": "./bsdl/ARM_JTAG_DP.bsd"}
+```
+
+This is a minimal ArduJTAG description for the STM32F4 ARM JTAG-DP, not a
+complete IEEE-conformant BSDL or a manufacturer's model. It declares IDCODE
+(`1110`) and BYPASS (`1111`), with expected IDCODE `0x?BA00477` (version ignored).
+It has no boundary register and does not implement ARM DAP register or memory
+access. Other debug implementations may require different IDCODE metadata.
+Only the STM32 Boundary TAP's manufacturer BSDL must be supplied separately.
 
 Choose a TAP by name, either in a batch or inside the shell:
 
@@ -190,8 +202,18 @@ idcode
 
 The list contains `boundary` and `debug`. Boundary IDCODE should match
 `0x06413041` under mask `0x0FFFFFFF`; the version nibble may differ. The client
-checks this against the BSDL. The configured `debug` TAP has no BSDL, so its
-high-level `idcode` and pin operations are unavailable.
+checks this against the BSDL. To read the Debug TAP IDCODE in the same session:
+
+```text
+target debug
+idcode
+target boundary
+```
+
+Expect `0x4BA00477`, with possible variation in the version nibble. Debug TAP
+supports IDCODE and BYPASS; boundary and pin commands fail before sending any
+JTAG clocks because its description has no boundary register. Return to
+`boundary` before the button and LED checks below.
 
 Read USER without pressing it, then hold USER and repeat:
 
@@ -251,6 +273,10 @@ These are expected hardware results, not a record of completed board testing.
 This first implementation supports literal decimal widths, quoted strings
 joined with `&`, binary instruction opcodes, X-masked 32-bit IDCODEs and
 complete numbered boundary-register records (including names like `DATA(0)`).
+Descriptions for TAPs without boundary scan may omit both `BOUNDARY_LENGTH`
+and `BOUNDARY_REGISTER`. Supplying only one, an explicit zero length, or a
+`REGISTER_ACCESS` reference to an absent BOUNDARY register is rejected.
+IDCODE and BYPASS remain available without boundary metadata.
 It is not a general VHDL/BSDL compiler: named constant expressions, opcode
 alternatives, custom register declarations and executable package semantics
 are not evaluated. Operations require the selected instruction to map to

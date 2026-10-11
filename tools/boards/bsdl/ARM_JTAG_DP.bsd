@@ -1,0 +1,21 @@
+-- Minimal ArduJTAG CLI description for the STM32F4 ARM JTAG-DP.
+-- Not a complete IEEE-conformant BSDL or a manufacturer's device model.
+-- Describes only IDCODE and BYPASS; no boundary cells or DAP transactions.
+-- The IDCODE version nibble is ignored; the remaining bits must match BA00477.
+entity ARM_JTAG_DP is
+    use STD_1149_1_2001.all;
+
+    attribute INSTRUCTION_LENGTH of ARM_JTAG_DP : entity is 4;
+    attribute INSTRUCTION_OPCODE of ARM_JTAG_DP : entity is
+        "IDCODE (1110)," &
+        "BYPASS (1111)";
+    attribute INSTRUCTION_CAPTURE of ARM_JTAG_DP : entity is "XX01";
+    attribute IDCODE_REGISTER of ARM_JTAG_DP : entity is
+        "XXXX" &
+        "1011101000000000" &
+        "01000111011" &
+        "1";
+    attribute REGISTER_ACCESS of ARM_JTAG_DP : entity is
+        "DEVICE_ID (IDCODE)," &
+        "BYPASS (BYPASS)";
+end ARM_JTAG_DP;

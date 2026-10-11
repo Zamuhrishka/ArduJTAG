@@ -12,7 +12,10 @@
         "LD6": "PD15"
       }
     },
-    {"name": "debug", "ir_length": 4}
+    {
+      "name": "debug",
+      "bsdl": "./bsdl/ARM_JTAG_DP.bsd"
+    }
   ],
   "default_target": "boundary"
 }

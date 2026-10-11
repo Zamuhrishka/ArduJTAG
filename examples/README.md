@@ -13,7 +13,7 @@ The tables below describe what each example does.
 
 ## Available examples
 
-Examples are grouped by API: `direct/` uses `Jtag` directly, while `chain/` uses
+Examples are grouped by API and transport: `direct/` uses `Jtag` directly, while `chain/` uses
 `JtagChain` and device access objects.
 
 ### Direct use of `Jtag`
@@ -41,6 +41,23 @@ These examples use `JtagChain` and, where applicable, `JtagDeviceAccess` to addr
 | [EnableArmDapChain](chain/EnableArmDapChain/EnableArmDapChain.ino) | Sends a fixed DP/AP request sequence through `JtagChain` and prints the raw final response; unlike the direct example, it does not verify memory or handle DAP errors. |
 | [BoundaryScanCommands](chain/BoundaryScanCommands/BoundaryScanCommands.ino) | Runs a boundary-scan demonstration once, after its teaching profile and vectors have been configured. |
 | [BoundaryScanPins](chain/BoundaryScanPins/BoundaryScanPins.ino) | Uses `BoundaryScan<Layout>` to prepare STM32F4 vectors by pin name and read PD12 with SAMPLE. Optional EXTEST drives PD12 HIGH, captures its level, then disables the driver. |
+
+
+### USB / Serial adapter
+
+| Example | What it does |
+| --- | --- |
+| [SerialTransferJtag](serial/SerialTransferJtag/SerialTransferJtag.ino) | Accepts binary commands for reset, speed, IR/DR and raw clocks. Use the dedicated `nano_serial` environment and Python client; it sends no Serial Monitor text. |
+
+See the [protocol and CLI guide](../include/protocol/README.md) for build,
+connection and request/response formats.
+
+The Python client can also use a JSON chain configuration and BSDL to read
+IDCODE, read USER and control the LEDs without changing the adapter sketch.
+See the [STM32F4DISCOVERY CLI checks](../tools/README.md#stm32f4discovery-hardware-checks).
+The board JSON is supplied, but the manufacturer's BSDL must be saved separately
+at its configured path (relative to the JSON file). Keep target NRST LOW for
+these boundary-scan checks and finish with `bypass` to release pin control.
 
 
 > ** WARNING: Boundary-scan template**

@@ -1,11 +1,16 @@
-#include <Arduino.h>
+// #if defined(ARDUJTAG_SERIAL_ADAPTER)
+#include "../examples/serial/SerialTransferJtag/SerialTransferJtag.ino"
+// #else
+// #include <Arduino.h>
 
-// #include "../examples/direct/ReadId/ReadId.ino"
-// #include "../examples/direct/ReadIdSequence/ReadIdSequence.ino"
-// #include "../examples/direct/ExtestLeds/ExtestLeds.ino"
-// #include "../examples/direct/ReadUserButton/ReadUserButton.ino"
-#include "../examples/direct/EnableArmDap/EnableArmDap.ino"
+// // #include "../examples/direct/ReadId/ReadId.ino"
+// // #include "../examples/direct/ReadIdSequence/ReadIdSequence.ino"
+// // #include "../examples/direct/ExtestLeds/ExtestLeds.ino"
+// // #include "../examples/direct/ReadUserButton/ReadUserButton.ino"
+// #include "../examples/direct/EnableArmDap/EnableArmDap.ino"
 
-// void setup() {}
+// // void setup() {}
 
-// void loop() {}
+// // void loop() {}
+
+// #endif

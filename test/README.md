@@ -24,6 +24,14 @@ test/
 │   └── test_chain/
 ├── boundary/
 │   └── test_boundary/
+├── protocol/
+│   └── test_protocol/
+├── python/
+│   ├── test_serial_jtag.py
+│   ├── test_bsdl.py
+│   ├── test_chain_config.py
+│   └── fixtures/
+│       └── boundary.bsdl
 ├── profiles/
 │   └── test_stm32_profile/
 └── backends/
@@ -35,6 +43,7 @@ test/
 
 | Module | What it checks |
 | --- | --- |
+| [test_protocol](protocol/test_protocol/test_main.cpp) | Serial protocol validation without clocks, Idle tracking, IR/DR/raw sequences and packet limits. |
 | [test_buffers](buffers/test_buffers/test_main.cpp) | `BitBuffer` construction, bit/byte ordering, partial-byte masking and invalid input handling. |
 | [test_ir](core/test_ir/test_main.cpp) | `Jtag::ir()` instruction bits, TAP transitions, supported lengths and rejection of empty instructions. |
 | [test_dr](core/test_dr/test_main.cpp) | `Jtag::dr()` transmission, response capture, output bounds and buffer validation. |
@@ -91,3 +100,29 @@ to check pin levels, clock edges and the ordering of TDO reads.
 These tests check software behavior and operation ordering. They do not measure physical GPIO timing, signal integrity
 or communication with an actual JTAG chain. They also do not validate real target opcodes, memory transactions or
 boundary-scan effects on board pins; those require hardware checks.
+
+## Serial client tests
+
+After installing `tools/requirements.txt` into a Python virtual environment:
+
+```sh
+python -m unittest discover -s test/python -v
+```
+
+The Python suite contains forty-one tests: five exercise the real pySerialTransfer
+encoder/parser over an in-memory connection, including CRC failures and
+uncertain-execution timeouts; seventeen use Click CliRunner to check argument
+validation, chained subcommands, command-specific help without opening a port,
+explicit interactive sessions, EOF, interrupts, port cleanup and BSDL-backed
+command sequences. Thirteen additional BSDL tests cover parsing, malformed
+metadata, chain offsets, IDCODE masks, preload order, pin state retention,
+unsupported cells, shared controls, limits and failure invalidation. Six chain
+configuration tests cover relative BSDL paths, strict JSON validation, TAPs
+without BSDL, named target switching, retained vectors and chain-wide
+invalidation. They are separate from the 66 C++ tests and
+need no physical board. See the [adapter guide](../include/protocol/README.md).
+
+`python/fixtures/boundary.bsdl` is a synthetic test fixture, not the STM32
+manufacturer's BSDL. Do not use it for hardware control. Board checks and
+preparation of the real BSDL are described in the
+[hardware walkthrough](../tools/README.md#stm32f4discovery-hardware-checks).

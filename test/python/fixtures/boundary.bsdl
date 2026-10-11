@@ -1,0 +1,22 @@
+-- Synthetic model for tests; not a profile for physical hardware.
+entity SYNTHETIC is
+  attribute INSTRUCTION_LENGTH of SYNTHETIC : entity is 5;
+  attribute INSTRUCTION_OPCODE of SYNTHETIC : entity is
+    "BYPASS (11111), IDCODE (00001), EXTEST (00000)," &
+    "SAMPLE (00010), PRELOAD (00010)";
+  attribute IDCODE_REGISTER of SYNTHETIC : entity is
+    "XXXX" & "0110010000010011" & "00000100000" & "1";
+  attribute REGISTER_ACCESS of SYNTHETIC : entity is
+    "BYPASS (BYPASS), DEVICE_ID (IDCODE), BOUNDARY (EXTEST, SAMPLE, PRELOAD)";
+  attribute COMPLIANCE_PATTERNS of SYNTHETIC : entity is "(NRST) (0)";
+  attribute BOUNDARY_LENGTH of SYNTHETIC : entity is 8;
+  attribute BOUNDARY_REGISTER of SYNTHETIC : entity is
+    "7 (BC_1, *, INTERNAL, 0)," &
+    "6 (BC_1, *, CONTROL, 0)," &
+    "5 (BC_1, PD13, OUTPUT3, X, 6, 0, Z)," &
+    "4 (BC_4, PD13, INPUT, X)," &
+    "3 (BC_1, *, CONTROL, 1)," &
+    "2 (BC_1, PD12, OUTPUT3, X, 3, 1, Z)," &
+    "1 (BC_4, PD12, INPUT, X)," &
+    "0 (BC_4, PA0, INPUT, X)";
+end SYNTHETIC;

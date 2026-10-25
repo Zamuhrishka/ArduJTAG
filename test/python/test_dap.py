@@ -7,8 +7,15 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
-from jtag_bsdl import Bsdl, BoundarySession, ChainSession, ChainConfig, TapConfig, load_config
-from jtag_dap import DapProfile, ArmJtagDp, PROFILE_PATH
+from ardujtag.bsdl import Bsdl
+from ardujtag.chain import TapSession
+from ardujtag.chain import ChainSession
+from ardujtag.config import ChainConfig
+from ardujtag.config import TapConfig
+from ardujtag.config import load_config
+from ardujtag.dap.profile import DapProfile
+from ardujtag.dap.jtag_dp import ArmJtagDp
+from ardujtag.dap.profile import PROFILE_PATH
 from test_bsdl import DEBUG_TEXT
 
 
@@ -82,6 +89,12 @@ class DapTransport:
 
 
 class DapTests(unittest.TestCase):
+    def test_dap_works_with_shared_tap_without_boundary_session(self):
+        tap = TapSession(self.t, Bsdl(DEBUG_TEXT), [5, 4], 1)
+        dap = ArmJtagDp(tap, self.profile, attempts=3)
+        self.assertEqual('DAP ready', dap.command('dap-init'))
+        self.assertEqual('0x12345678', dap.command('mem-read32', 0x20000000, 0))
+
     def setUp(self):
         self.t = DapTransport()
         self.profile = DapProfile()
@@ -90,7 +103,7 @@ class DapTests(unittest.TestCase):
         self.chain = ChainSession(self.t, config)
         self.dap = self.chain.daps[1]
         self.dap.attempts = 3
-        sleeper = patch('jtag_dap.time.sleep')
+        sleeper = patch('ardujtag.dap.jtag_dp.time.sleep')
         sleeper.start()
         self.addCleanup(sleeper.stop)
 

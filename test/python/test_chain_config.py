@@ -5,7 +5,11 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
-from jtag_bsdl import Bsdl, TapConfig, ChainConfig, ChainSession, load_config
+from ardujtag.bsdl import Bsdl
+from ardujtag.config import TapConfig
+from ardujtag.config import ChainConfig
+from ardujtag.chain import ChainSession
+from ardujtag.config import load_config
 from test_bsdl import TEXT, DEBUG_TEXT, Transport
 
 

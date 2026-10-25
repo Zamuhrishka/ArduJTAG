@@ -48,7 +48,7 @@ new architectures require corresponding driver logic and tests.
 
 ## Code versus metadata
 
-`tools/jtag_dap.py` implements pipelined response handling, bounded WAIT polling,
+`tools/ardujtag/dap/jtag_dp.py` implements pipelined response handling, bounded WAIT polling,
 power-up, sticky-error checks and single-word memory transactions. Each AP
 access explicitly selects the AP/bank. Memory accesses validate AP IDR, write
 and verify CSW, then set TAR and access DRW. There is no SELECT/CSW cache.

@@ -441,6 +441,8 @@ The Debug TAP uses the bundled minimal `ARM_JTAG_DP.bsd` description, allowing
 provides `dap-init`, DP/AP register access and `mem-read32`/`mem-write32`.
 Release NRST for DAP operations; the CLI does not automatically halt the CPU.
 Register metadata lives in JSON separately from the Python exchange logic.
+Python modules and their data live in `tools/ardujtag/`; `tools/serial_jtag.py`
+is the CLI entry point. See the [module layout](tools/README.md#python-modules).
 See [DAP commands and limitations](tools/README.md#arm-dap-registers-and-memory).
 
 ```sh

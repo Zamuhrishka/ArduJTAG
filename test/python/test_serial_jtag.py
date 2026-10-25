@@ -1,9 +1,9 @@
 """Client tests using the real pySerialTransfer encoder/parser without hardware."""
-import importlib.util
 from pathlib import Path
 import struct
 import tempfile
 import json
+import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
 import unittest
@@ -13,9 +13,8 @@ from click.testing import CliRunner
 
 from pySerialTransfer import pySerialTransfer as transfer
 
-spec = importlib.util.spec_from_file_location('serial_jtag', Path(__file__).resolve().parents[2] / 'tools/serial_jtag.py')
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
+from ardujtag import cli as module
+from ardujtag.transport import Client
 
 
 class Connection:
@@ -50,7 +49,7 @@ def link():
 class ClientTests(unittest.TestCase):
     def setUp(self):
         self.host, self.peer = link(), link()
-        self.client = module.Client(self.host, timeout=0.02)
+        self.client = Client(self.host, timeout=0.02)
         self.requests = []
         self.status, self.corrupt, self.drop = 0, False, False
 
@@ -123,6 +122,15 @@ class ClientTests(unittest.TestCase):
 
 
 class ClickTests(unittest.TestCase):
+    def test_entry_point_runs_from_another_directory(self):
+        script = Path(__file__).resolve().parents[2] / 'tools/serial_jtag.py'
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run([sys.executable, str(script), '--help'],
+                                    cwd=directory, text=True, capture_output=True, timeout=10)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('dap-init', result.stdout)
+        self.assertIn('--config', result.stdout)
+
     def test_dap_batch_and_shell_share_initialized_session(self):
         from test_dap import DapTransport
         from test_bsdl import DEBUG_TEXT

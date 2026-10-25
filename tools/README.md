@@ -5,6 +5,50 @@ SerialTransfer adapter (`pio run -e nano_serial -t upload`). Run commands from
 the repository root. See the [wire protocol guide](../include/protocol/README.md)
 for wiring, raw commands and adapter limitations.
 
+## Python modules
+
+`serial_jtag.py` is the entry point; command syntax stays the same. The host
+implementation is in the `ardujtag` package, using relative imports:
+
+```text
+tools/
+├── serial_jtag.py
+├── ardujtag/
+│   ├── __init__.py
+│   ├── cli.py             # Click commands, shell and connection lifecycle
+│   ├── transport.py       # SerialTransfer packets and adapter commands
+│   ├── config.py          # Chain JSON, BSDL paths and aliases
+│   ├── bsdl.py            # Literal BSDL parser and cell metadata
+│   ├── chain.py           # Shared TapSession scans and ChainSession routing
+│   ├── boundary.py        # Boundary vectors and pin operations
+│   ├── idcode.py          # IDCODE formatting and vendor lookup
+│   ├── _json.py           # Duplicate JSON key validation
+│   ├── dap/
+│   │   ├── __init__.py
+│   │   ├── profile.py     # Register profile validation
+│   │   └── jtag_dp.py     # DP/AP exchange and word memory access
+│   └── data/
+│       ├── jtag_vendors.json
+│       └── dap/
+│           ├── README.md
+│           └── stm32f4_adiv5.json
+├── boards/                # Board configuration and BSDL files
+├── requirements.txt
+└── README.md
+```
+
+`BoundarySession` and `ArmJtagDp` independently use `TapSession` for IR/DR scans,
+BYPASS padding and IDCODE validation. `ChainSession` coordinates target selection
+and invalidates shared state on failures or raw operations. DAP does not depend
+on the boundary-scan implementation. Protocol metadata is inside the package;
+board configuration stays outside it. Resource paths are resolved relative to
+their modules, and BSDL paths remain relative to the board JSON.
+
+For Python callers, import from the specific package module with `tools` on
+the Python import path, e.g. `from ardujtag.config import load_config`. The old
+`jtag_bsdl.py` and `jtag_dap.py` modules have been removed without forwarding
+modules. The CLI launcher remains `python tools/serial_jtag.py ...`.
+
 ## JSON chain configuration
 
 Use `--config FILE` to describe the complete chain. The `taps` array is in
@@ -160,7 +204,7 @@ alongside their numeric value. The device number identifies the TAP's part,
 not necessarily the complete microcontroller model. The same output is used
 in batches and interactive sessions, after successful BSDL validation.
 
-Vendor names are stored in [data/jtag_vendors.json](data/jtag_vendors.json):
+Vendor names are stored in [ardujtag/data/jtag_vendors.json](ardujtag/data/jtag_vendors.json):
 
 ```json
 {
@@ -313,8 +357,8 @@ The supplied STM32F4DISCOVERY config enables a target-specific ADIv5 driver:
 ```
 
 Register addresses, banks, bit fields and access types live in
-[stm32f4_adiv5.json](data/dap/stm32f4_adiv5.json), with sources and format
-described in the [profile guide](data/dap/README.md). The profile is loaded and
+[stm32f4_adiv5.json](ardujtag/data/dap/stm32f4_adiv5.json), with sources and format
+described in the [profile guide](ardujtag/data/dap/README.md). The profile is loaded and
 checked before connecting. BSDL describes the TAP; the protocol profile adds
 DP/AP semantics. A four-bit BSDL with matching IDCODE/BYPASS opcodes is required.
 

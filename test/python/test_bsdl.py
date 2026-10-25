@@ -7,8 +7,12 @@ import io
 import os
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
-from jtag_bsdl import Bsdl, BoundarySession, load_chain, format_idcode
-from jtag_bsdl import load_vendors
+from ardujtag.bsdl import Bsdl
+from ardujtag.boundary import BoundarySession
+from ardujtag.chain import TapSession
+from ardujtag.config import load_chain
+from ardujtag.idcode import format_idcode
+from ardujtag.idcode import load_vendors
 
 FIXTURE = Path(__file__).parent / 'fixtures/boundary.bsdl'
 TEXT = FIXTURE.read_text()
@@ -57,7 +61,7 @@ class BsdlTests(unittest.TestCase):
                         path.write_text(contents)
                     load_vendors.cache_clear()
                     stderr = io.StringIO()
-                    with patch('jtag_bsdl.VENDORS_PATH', path), patch('sys.stderr', stderr):
+                    with patch('ardujtag.idcode.VENDORS_PATH', path), patch('sys.stderr', stderr):
                         for _ in range(2):
                             result = format_idcode(0x4BA00477)
                             self.assertIn('0x4BA00477', result)
@@ -82,7 +86,7 @@ class BsdlTests(unittest.TestCase):
         for value in (0x4BA00477, 0x2BA00477):
             transport = Transport()
             transport.reply = f'{value:032b}'[::-1] + '0'
-            session = BoundarySession(transport, model, [5, 4], 1)
+            session = BoundarySession(TapSession(transport, model, [5, 4], 1))
             self.assertEqual(f'0x{value:08X}', session.command('idcode').splitlines()[0])
             self.assertEqual([('reset',), ('ir', '011111111'), ('dr', '0' * 33)], transport.calls)
             session.command('bypass')
@@ -93,7 +97,7 @@ class BsdlTests(unittest.TestCase):
 
     def test_debug_boundary_operations_fail_without_clocks(self):
         transport = Transport()
-        session = BoundarySession(transport, Bsdl(DEBUG_TEXT), [5, 4], 1)
+        session = BoundarySession(TapSession(transport, Bsdl(DEBUG_TEXT), [5, 4], 1))
         for operation in [('sample',), ('preload',), ('extest',), ('intest',),
                           ('pin-read', 'PA0'), ('pin-write', 'PA0', '1'), ('pin-disable', 'PA0')]:
             with self.subTest(operation=operation), self.assertRaisesRegex(ValueError, 'no boundary-scan register'):
@@ -115,7 +119,7 @@ class BsdlTests(unittest.TestCase):
     def setUp(self):
         self.bsdl = Bsdl(TEXT)
         self.transport = Transport()
-        self.session = BoundarySession(self.transport, self.bsdl, [5, 4], 0, {'USER': 'PA0'})
+        self.session = BoundarySession(TapSession(self.transport, self.bsdl, [5, 4], 0), {'USER': 'PA0'})
 
     def test_metadata_and_bit_order(self):
         self.assertEqual('10000', self.bsdl.instruction('IDCODE', 'DEVICE_ID'))
@@ -130,7 +134,7 @@ class BsdlTests(unittest.TestCase):
         for lengths, target in [([5, 4], 0), ([4, 5], 1), ([2, 5, 4], 1)]:
             with self.subTest(target=target, lengths=lengths):
                 t = Transport()
-                session = BoundarySession(t, self.bsdl, lengths, target)
+                session = BoundarySession(TapSession(t, self.bsdl, lengths, target))
                 offset = len(lengths) - target - 1
                 t.reply = '0' * offset + f'{0x16413041:032b}'[::-1] + '0' * target
                 self.assertEqual('0x16413041', session.command('idcode').splitlines()[0])
@@ -220,12 +224,12 @@ class BsdlTests(unittest.TestCase):
         for text in [TEXT.replace('BC_4', 'BC_99'),
                      TEXT.replace('X, 3, 1, Z', 'X, 99, 1, Z'),
                      TEXT.replace('X, 3, 1, Z', 'X, 3, 1, PULL1')]:
-            session = BoundarySession(self.transport, Bsdl(text), [5, 4], 0)
+            session = BoundarySession(TapSession(self.transport, Bsdl(text), [5, 4], 0))
             with self.assertRaises(ValueError):
                 session.command('extest')
             self.assertEqual([], self.transport.calls)
         shared = Bsdl(TEXT.replace('X, 6, 0, Z', 'X, 3, 1, Z'))
-        session = BoundarySession(self.transport, shared, [5, 4], 0)
+        session = BoundarySession(TapSession(self.transport, shared, [5, 4], 0))
         with self.assertRaisesRegex(ValueError, 'shared'):
             session.command('pin-write', 'PD12', '1')
         self.assertEqual([], self.transport.calls)
@@ -233,7 +237,7 @@ class BsdlTests(unittest.TestCase):
     def test_intest_and_combined_sample_preload_alias(self):
         text = TEXT.replace('PRELOAD (00010)', 'PRELOAD (00010), INTEST (00100)').replace(
             'BOUNDARY (EXTEST, SAMPLE, PRELOAD)', 'BOUNDARY (EXTEST, SAMPLE, PRELOAD, INTEST)')
-        session = BoundarySession(self.transport, Bsdl(text), [5, 4], 0)
+        session = BoundarySession(TapSession(self.transport, Bsdl(text), [5, 4], 0))
         self.assertEqual('11111111', session.command('intest'))
         self.assertEqual(('ir', '111100100'), self.transport.calls[3])
         text = TEXT.replace('SAMPLE (00010), PRELOAD (00010)', 'SAMPLE/PRELOAD (00010)').replace(
@@ -245,7 +249,7 @@ class BsdlTests(unittest.TestCase):
         records = ','.join(f'{i} (BC_1, *, INTERNAL, 0)' for i in range(8, 406))
         text = TEXT.replace('entity is 8;', 'entity is 406;').replace(
             '"7 (BC_1, *, INTERNAL, 0),"', '"' + records + ',7 (BC_1, *, INTERNAL, 0),"')
-        session = BoundarySession(self.transport, Bsdl(text), [5, 4], 0)
+        session = BoundarySession(TapSession(self.transport, Bsdl(text), [5, 4], 0))
         self.assertEqual('1', session.command('pin-read', 'PA0'))
         self.assertEqual(407, len(self.transport.calls[-1][1]))
         self.assertEqual(406, len(session.vector))
